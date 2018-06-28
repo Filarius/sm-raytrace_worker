@@ -379,7 +379,15 @@ class Grabber:
 
         return ray
 
+
     def _makeRayTree(self, ray, vector=None):
+        def _1(ray,dx,dy,dz):
+            return (ray['x'] + dx,ray['y'] + dy,ray['z'] + dz)
+
+        def _2(todo,t,i):
+            ti = (t[0], t[1], t[2], i)
+            todo.append(ti)
+
         #_ = []
 
         # prepare index shift for directed ray
@@ -390,10 +398,14 @@ class Grabber:
                 for dz in [-1, 0, 1]:
                     #if (dx == 0) and (dy == 0) and (dz == 0):
                     #    continue
-                    #r = dict()
-                    # r['x'] = ray['x'] + dx
-                    # r['y'] = ray['y'] + dy
-                    # r['z'] = ray['z'] + dz
+                    '''r = dict()
+                    r['x'] = ray['x'] + dx
+                    r['y'] = ray['y'] + dy
+                    r['z'] = ray['z'] + dz'''
+                   #t=(ray['x'] + dx,ray['y'] + dy,ray['z'] + dz)
+                    t = _1(ray,dx,dy,dz)
+
+
                     # tbl = (sign+dir,r['x'],r['y'],r['z'])
                     '''
                     i=0
@@ -407,10 +419,15 @@ class Grabber:
                                 self._ray_map_marks.set(ti, False)
                             i += 1
                     '''
-                    i = 0
+                    #i = 0
                     for i in range(6):
-                            ti = (ray['x']+dx, ray['y']+dy, ray['z']+ dz, i)
-                            todo.append(ti)
+                            _2(todo,t,i)
+                            #ti = (t[0], t[1], t[2], i)
+                            #todo.append(ti)
+
+                            #ti = (ray['x']+dx, ray['y']+dy, ray['z']+ dz, i)
+                            #ti = (r['x'], r['y'], r['z'], i)
+
                             #new_ray = self._raySetDirection(r, i, inf=False)
                             #_.append(new_ray)
 
