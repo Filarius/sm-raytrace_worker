@@ -1,11 +1,11 @@
-import dataset
-import operator
+#import dataset
+#import operator
 # import pymesh
-import numpy as np
+#import numpy as np
 #import valve.rcon
 import socket
 from multiprocessing import Process,Queue
-# import pickle
+
 from time import sleep, time
 import struct
 
@@ -47,7 +47,6 @@ INFINITY = 1000.0
 class Storage:
     def __init__(self):
         self._nested = set()
-
         #self._nested = dict()
         self.nested = self._nested
         self.readCount = 0
@@ -276,6 +275,37 @@ class Grabber:
         self.raysCount = 0
         self.timeDelta = 0
 
+        #populate angle_tree map
+        self._angleTree = []
+        for i in range(6):
+            val = dict()
+            if i == 0:
+                val['a'] = 0
+                val['b'] = 180
+                val['c'] = 0
+            if i == 1:
+                val['a'] = 0
+                val['b'] = 0
+                val['c'] = 0
+            if i == 2:
+                val['a'] = 0
+                val['b'] = -90
+                val['c'] = 0
+            if i == 3:
+                val['a'] = 0
+                val['b'] = 90
+                val['c'] = 0
+            if i == 4:
+                val['a'] = 90
+                val['b'] = 0
+                val['c'] = 0
+            if i == 5:
+                val['a'] = -90
+                val['b'] = 0
+                val['c'] = 0
+            self._angleTree.append(val)
+
+
 
     # distance between points
 
@@ -301,6 +331,8 @@ class Grabber:
     # create ray from reference ray in given direction from infinity or not
     def _raySetDirection(self, ray, dir, inf=True):
         ray = dict(ray)
+        angle = self._angleTree[dir]
+        '''
         if dir == '+x':
             ray['a'] = 0
             ray['b'] = 0
@@ -326,7 +358,7 @@ class Grabber:
             ray['b'] = 0
             ray['c'] = 0
 
-        '''
+        
         x = dir[1]
         y = dir[0] == '+'
         z = self._precision if y else -self._precision
@@ -336,30 +368,34 @@ class Grabber:
         ray['x'] *= self._precision
         ray['y'] *= self._precision
         ray['z'] *= self._precision
+        ray['a'] = angle['a']
+        ray['b'] = angle['b']
+        ray['c'] = angle['c']
 
         # if infinity - shift ray start position based on direction
-        if inf:
-            ray[dir[1]] = -INFINITY if (dir[0] == '+') else +INFINITY
+        #if inf:
+        #    ray[dir[1]] = -INFINITY if (dir[0] == '+') else +INFINITY
             # pass
 
         return ray
 
     def _makeRayTree(self, ray, vector=None):
-        _ = []
+        #_ = []
 
         # prepare index shift for directed ray
         # create ray in same direction after hit
-        rays_todo = set()
+        todo = []
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 for dz in [-1, 0, 1]:
                     #if (dx == 0) and (dy == 0) and (dz == 0):
                     #    continue
-                    r = dict()
-                    r['x'] = ray['x'] + dx
-                    r['y'] = ray['y'] + dy
-                    r['z'] = ray['z'] + dz
+                    #r = dict()
+                    # r['x'] = ray['x'] + dx
+                    # r['y'] = ray['y'] + dy
+                    # r['z'] = ray['z'] + dz
                     # tbl = (sign+dir,r['x'],r['y'],r['z'])
+                    '''
                     i=0
                     for sign in ['-', '+']:
                         for dir in ['x', 'y', 'z']:
@@ -370,14 +406,37 @@ class Grabber:
                                 _.append(new_ray)
                                 self._ray_map_marks.set(ti, False)
                             i += 1
+                    '''
+                    i = 0
+                    for i in range(6):
+                            ti = (ray['x']+dx, ray['y']+dy, ray['z']+ dz, i)
+                            todo.append(ti)
+                            #new_ray = self._raySetDirection(r, i, inf=False)
+                            #_.append(new_ray)
 
-        return _
+                            #val = self._ray_map_marks.get(ti, True)
+                            #if val:  # no rays from this point
+
+                            #    self._ray_map_marks.set(ti, False)
+                            #i += 1
+
+
+
+
+        return (todo)
 
     def init(self):
         ray = self._createRay(0, 0, 0, 0, 0, 0)
         ray_tree = self._makeRayTree(ray)
+        jobs = []
+        for ray in ray_tree: # ray = (x,y,z,dir)
+            new_ray = list(ray)[:3]
+            new_ray.extend([0,0,0])
+            new_ray = self._createRay(*new_ray)
+            jobs.append(self._raySetDirection(new_ray,ray[3]))
         # self.tf2.addTrace(ray_tree)
-        self.addJobs(ray_tree)
+        #self.addJobs(ray_tree)
+        self.addJobs(jobs)
 
 
     def _distance(self,pnt, ri):
@@ -481,7 +540,7 @@ class Grabber:
 
         #print("mark3")
         #print(len(rays))
-
+        todo = set()
         for ray in rays:
             #if db_id < ray['id']:
             #    db_id = ray['id']
@@ -548,10 +607,26 @@ class Grabber:
                         self.hits[hi] = (hit, dist)
 
                 # self.toStepCoords(ray)
+                new_set = self._makeRayTree(self.createRay(x,y,z,0,0,0))
+                todo.update(new_set)
 
-                new_ray = self._createRay(x, y, z, 0, 0, 0)
-                rays_todo.extend(self._makeRayTree(new_ray, vector))
+                #new_ray = self._createRay(x, y, z, 0, 0, 0)
+                #rays_todo.extend(self._makeRayTree(new_ray, vector))
                 self.doneCount += 1
+
+        t = self._ray_map_marks.nested.intersection(todo)
+        #t = todo.intersection(self._ray_map_marks.nested)
+        todo.difference_update(t)
+        # todo.difference_update(self._ray_map_marks.nested)
+        self._ray_map_marks.nested.update(todo)
+        rays_todo = []
+        for data in todo:
+            ray = self._createRay(data[0],data[1],data[2],0,0,0)
+            dir = data[3]
+            rays_todo.append(self._raySetDirection(ray,dir))
+
+
+
                 # remove existed rays
                 # for ray in rays_todo:
         if len(rays_todo) > 0:
