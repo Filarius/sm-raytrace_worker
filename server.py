@@ -1,7 +1,7 @@
 from multiprocessing import Process, Queue
 import socket
 import struct
-
+import math
 class Server:
     def __init__(self, address):
         self.queueIn = Queue(100)
@@ -9,7 +9,7 @@ class Server:
         self._runFlag = True
         self._sock = socket.socket()
         self._sock.connect(address)
-        self._packetSize = 100000
+        self._packetSize = 10000
         self._bufferLimit = 4096 - 24
 
         self._procWrite = Process(target=self._socket_write_loop,
@@ -37,7 +37,10 @@ class Server:
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
                 unpacked = struct.unpack("<6f", packed)
-                # print("{:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*hit))
+                for val in unpacked:
+                    if math.isnan(val):
+                        print("error socket read value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*unpacked))
+                # print()
                 hits.append(unpacked)
 
             size = len(data)
@@ -65,6 +68,10 @@ class Server:
                 ray = lst[indxIn]
                 indxIn += 1
                 lray = [ray['x'], ray['y'], ray['z'], ray['a'], ray['b'], ray['c']]
+                for val in lray:
+                    if math.isnan(val):
+                        #print('error socket write value',lray)
+                        print("error socket write value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*lray))
                 packed += struct.pack(">6f", *lray)
                 if len(packed) >= self._bufferLimit:
                     break

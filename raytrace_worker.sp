@@ -15,7 +15,7 @@ Database g_hDatabase = null;
 //const int iPackSize = 50;
  // = iPackSize * 3
 
-char cBuffer[10240000];
+char cBuffer[1024000];
 int iBufSize = 0;
 
 
@@ -52,6 +52,14 @@ public void OnPluginStart()
 	PrintToServer("Plugin loaded.");
 }
 
+Handle hSocket;
+
+void OnPluginEnd()
+{
+ delete hSocket;
+}
+
+
 
 public void OnConfigsExecuted()
 {
@@ -61,13 +69,16 @@ public void OnConfigsExecuted()
 
 	int iSocketPort = GetConVarInt(SocketPort);
 
-	Handle socket = SocketCreate(SOCKET_TCP, OnSocketError);
-	SocketSetOption(socket, SocketSendLowWatermark, 24);
-	SocketSetOption(socket, SocketReceiveLowWatermark, 24);
-	SocketSetOption(socket, CallbacksPerFrame, 100000);
-	SocketSetOption(socket, ForceFrameLock, false);
-	SocketBind(socket, "0.0.0.0", iSocketPort);
-	SocketListen(socket, OnSocketIncoming);
+	hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
+	SocketSetOption(hSocket, SocketSendLowWatermark, 24);
+	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
+	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
+	SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
+	SocketSetOption(hSocket, SocketSendBuffer, 24*1000);
+	SocketSetOption(hSocket, SocketReceiveBuffer, 24*1000);
+	SocketSetOption(hSocket, ForceFrameLock, false);
+	SocketBind(hSocket, "0.0.0.0", iSocketPort);
+	SocketListen(hSocket, OnSocketIncoming);
 }
 
 
@@ -96,6 +107,16 @@ public void OnSocketError(Handle socket, int errorType, int errorNum, int arg)
 void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle,float[3] hit)
 {
 
+}
+
+void CheckNan(float f)
+{
+    if ( (f != 0.0) && (!f))
+    {
+        char tmp[100];
+        Format(tmp, 100, "NAN ! %.2f ",f);
+        LogMessage(tmp);
+    }
 }
 
 public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile)
@@ -263,7 +284,7 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
                 FloatToString(flHits[shift + j],tmp,10);
                 LogMessage(tmp);
                 */
-
+                CheckNan(flHits[shift + j]);
 	            int iTmp = view_as<int>(flHits[shift + j]);
 	            /*
 	            LogMessage("iTmp");
