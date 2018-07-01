@@ -19,6 +19,7 @@ char cBuffer[1024000];
 int iBufSize = 0;
 
 File hFileWrite;
+File hFileInput;
 
 
 
@@ -54,7 +55,8 @@ public void OnPluginStart()
 
     DeleteFile("source.txt",false,"");
 
-    hFileWrite = OpenFile("source.txt","wb");
+    hFileWrite = OpenFile("server_output.txt","wb");
+    hFileInput = OpenFile("server_input.txt","wb");
 	PrintToServer("Plugin loaded.");
 }
 
@@ -64,6 +66,7 @@ public void OnPluginEnd()
 {
  CloseHandle(hSocket);
  CloseHandle(hFileWrite);
+ CloseHandle(hFileInput);
 }
 
 
@@ -81,10 +84,10 @@ public void OnConfigsExecuted()
 	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
 	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
 	//SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
-	//SocketSetOption(hSocket, SocketSendBuffer, 24*1000);
-	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*1000);
-	//SocketSetOption(hSocket, SocketReceiveTimeout, 1000);
-	//SocketSetOption(hSocket, SocketSendTimeout, 1000);
+	//SocketSetOption(hSocket, SocketSendBuffer, 24*5);
+	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*5);
+	//SocketSetOption(hSocket, SocketReceiveTimeout, 1);
+	//SocketSetOption(hSocket, SocketSendTimeout, 1);
 	SocketSetOption(hSocket, ForceFrameLock, false);
 	SocketBind(hSocket, "0.0.0.0", iSocketPort);
 	SocketListen(hSocket, OnSocketIncoming);
@@ -136,8 +139,9 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	char tmp[10];
 
 	//LogMessage("SocketData");
+
+	//LogMessage("SocketData");
 	/*
-	LogMessage("SocketData");
 	LogMessage("Bytes per Packet");
 	IntToString(iPackSize*4*6,tmp,10);
     LogMessage(tmp);
@@ -148,34 +152,40 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
     LogMessage(receiveData);
     */
 
-    /*
+/*
     LogMessage("BuffSize");
 	IntToString(iBufSize,tmp,10);
 	LogMessage(tmp);
 	LogMessage("datasize");
 	IntToString(dataSize,tmp,10);
 	LogMessage(tmp);
-	*/
+*/
 
 
-
+    /*
 	for(int i=0;i<dataSize;i++)
 	{
 	    cBuffer[iBufSize+i] = receiveData[i];
 	}
 	iBufSize += dataSize;
+	*/
+
+	int pointer = 0;
 
 
 
-	if( iBufSize >= 24 ) // have all bulk data received
+
+	//if( pointer < ( iBufSize + dataSize ) )// iBufSize >= 24 ) // have all bulk data received
 	{
-	    int iPackSize = iBufSize / 24 ;
-	    /*
+	    int iPackSize = (iBufSize + dataSize) / 24 ;
+        /*
 	    LogMessage("packet size");
 	    IntToString(iPackSize,tmp,10);
 	    LogMessage(tmp);
 	    */
 
+
+	    /*
 	    int div = iBufSize % 24;
 	    if (div > 0)
 	    {
@@ -183,6 +193,8 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        LogMessage("div");
 	        LogMessage(tmp);
 	    }
+	    */
+
 
 	    //int iPackCount = iBufSize / (4*6);
 	    float[] flHits = new float[iPackSize*6];// = new float[iPackSize*6];
@@ -191,19 +203,49 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 
 	    for(int i=0;i<iPackSize;i++) // iterate rays
 	    {
+
+	        char chunk[24];
+	        /*
+	        LogMessage("iBufSize");
+	        IntToString(iBufSize,tmp,10);
+            LogMessage(tmp);
+            */
+	        if (pointer < iBufSize)
+	        {
+	            for(int k=0;k<iBufSize;k++)
+	            {
+	                chunk[k] = cBuffer[k];
+	            }
+
+	            for(int k=0; k<24-iBufSize; k++)
+	            {
+	                chunk[iBufSize + k] = receiveData[k];
+	            }
+
+	        }
+	        else
+	        {
+	            for(int k=0;k<24;k++)
+	            {
+	                chunk[k] = receiveData[pointer-iBufSize+k];
+	            }
+
+	        }
+	        pointer += 24;
 	        /*
 	        LogMessage("i");
 	        IntToString(i,tmp,10);
             LogMessage(tmp);
             */
-	        int shift = i*24;
+	        //int shift = i*24;
+	        int shift = 0;
             float flRay[6];
 	        for(int j=0;j<6;j++) // iterate floats
 	        {
 	            /*
 	            LogMessage("j");
 	            IntToString(j,tmp,10);
-                LogMessage(tmp);
+                LogMessage(tmp);a
                 */
 	            int jShift = j*4;
 	            int iVal = 0;
@@ -213,7 +255,7 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
                 LogMessage(tmp);
                 LogMessage("iVals");
                 */
-	            iVal = cBuffer[shift + (jShift + 0)];
+	            iVal = chunk[shift + (jShift + 0)];
 	            /*
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
@@ -223,7 +265,7 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
                 */
-	            iVal = cBuffer[shift + (jShift + 1)] + iVal;
+	            iVal = chunk[shift + (jShift + 1)] + iVal;
 	            /*
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
@@ -233,7 +275,7 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
                 */
-	            iVal = cBuffer[shift + (jShift + 2)] + iVal;
+	            iVal = chunk[shift + (jShift + 2)] + iVal;
 	            /*
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
@@ -243,17 +285,17 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
                 */
-	            iVal = cBuffer[shift + (jShift + 3)] + iVal;
+	            iVal = chunk[shift + (jShift + 3)] + iVal;
 	            /*
 	            IntToString(iVal,tmp,10);
                 LogMessage(tmp);
                 */
 	            flRay[j] = view_as<float>(iVal);
-	            /*
-	            LogMessage("got float");
-	            FloatToString(flRay[j],tmp,10);
-                LogMessage(tmp);
-                */
+
+	            //LogMessage("got float");
+	            //FloatToString(flRay[j],tmp,10);
+                //LogMessage(tmp);
+
 	        }
 	        float flPoint[3];
 	        float flAngle[3];
@@ -347,7 +389,28 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	            iSendBuffPos += 4;
 
 	        }
+
+	        int sendString[32];
+            for(int k=0;k<24;k++)
+            {
+                sendString[k] = cSendBuff[k+iSendBuffPos-24];
+            }
+            for(int k=24;k<30;k++)
+            {
+                sendString[k] = 48;
+            }
+            sendString[30] = 13;
+            sendString[31] = 10;
+            WriteFile(hFileWrite, sendString, 32,1);
 	    }
+
+        iBufSize = (iBufSize + dataSize) - iPackSize*24;
+        for(int i = 0; i<iBufSize; i++)
+        {
+            cBuffer[i] = receiveData[iPackSize + i];
+        }
+
+
 	    //send encoded floats
 
         /*
@@ -355,21 +418,22 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	    LogMessage("Socket send size");
         LogMessage(tmp);
         */
-
+        /*
         int[] sendString = new int[iPackSize*24];
         for(int i=0;i<iPackSize*24;i++)
         {
             sendString[i] = cSendBuff[i];
         }
+        */
         //sendString[iPackSize*24] = 0;
 
-        WriteFile(hFileWrite, sendString, iPackSize*24,1);
+
 	    FlushFile(hFileWrite);
 
 	    SocketSend(socket,cSendBuff, iPackSize*24);
 
 	    //remove from buffer already sended data
-
+        /*
 	    int bounds = iPackSize*24;
 	    for(int i = bounds; i<iBufSize; i++)
 	    {
@@ -377,6 +441,9 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        cBuffer[i-bounds] = cBuffer[i];
 	    }
         iBufSize -= bounds;
+        */
+
+
         /*
         IntToString(iBufSize,tmp,10);
         LogMessage(tmp);

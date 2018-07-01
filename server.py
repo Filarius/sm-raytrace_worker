@@ -25,7 +25,7 @@ class Server:
         data = b""
         packetSize = self._packetSize
         sock = self._sock
-        file = open("python.txt","wb")
+        file = open("client_read.txt","wb")
         while self._runFlag:
             while (len(data) < (24)):
                 newdata = sock.recv(packetSize * 6 * 4)
@@ -39,7 +39,7 @@ class Server:
             hits = []
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
-                file.write(packed+b"\r\n")
+                file.write(packed+b"000000\r\n")
                 unpacked = struct.unpack("<6f", packed)
                 for val in unpacked:
                     if math.isnan(val):
@@ -61,6 +61,7 @@ class Server:
         indxIn = 0
         lst = []
         sock = self._sock
+        file = open("client_write.txt", "wb")
 
         while self._runFlag:
             if not lst: #list is empty
@@ -77,9 +78,12 @@ class Server:
                     if math.isnan(val):
                         #print('error socket write value',lray)
                         print("error socket write value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*lray))
-                packed += struct.pack(">6f", *lray)
+                subpacked = struct.pack(">6f", *lray)
+                file.write(packed + b"000000\r\n")
+                packed += subpacked
                 if len(packed) >= self._bufferLimit:
                     break
+            file.flush()
 
             sock.sendall(packed)
             packed = b""
