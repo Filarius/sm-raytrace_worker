@@ -25,23 +25,28 @@ class Server:
         data = b""
         packetSize = self._packetSize
         sock = self._sock
+        file = open("python.txt","wb")
         while self._runFlag:
             while (len(data) < (24)):
                 newdata = sock.recv(packetSize * 6 * 4)
                 if newdata:
                     data += newdata
 
+
+
             size = len(data)
             size = size - (size % 24)
             hits = []
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
+                file.write(packed+b"\r\n")
                 unpacked = struct.unpack("<6f", packed)
                 for val in unpacked:
                     if math.isnan(val):
                         print("error socket read value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*unpacked))
                 # print()
                 hits.append(unpacked)
+            file.flush()
 
             size = len(data)
             if (size % 24) != 0:

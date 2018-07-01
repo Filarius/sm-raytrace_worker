@@ -18,6 +18,8 @@ Database g_hDatabase = null;
 char cBuffer[1024000];
 int iBufSize = 0;
 
+File hFileWrite;
+
 
 
 public Plugin myinfo = 
@@ -48,15 +50,20 @@ public void OnPluginStart()
 	SocketBind(socket, "0.0.0.0", 40000);
 	SocketListen(socket, OnSocketIncoming);
 */
+    // hFileWrite = OpenFile("D:\\FILES\\Code\\20180527 tf2 tracert\\python\\source.txt","wb");
 
+    DeleteFile("source.txt",false,"");
+
+    hFileWrite = OpenFile("source.txt","wb");
 	PrintToServer("Plugin loaded.");
 }
 
 Handle hSocket;
 
-void OnPluginEnd()
+public void OnPluginEnd()
 {
- delete hSocket;
+ CloseHandle(hSocket);
+ CloseHandle(hFileWrite);
 }
 
 
@@ -73,9 +80,11 @@ public void OnConfigsExecuted()
 	SocketSetOption(hSocket, SocketSendLowWatermark, 24);
 	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
 	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
-	SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
-	SocketSetOption(hSocket, SocketSendBuffer, 24*1000);
-	SocketSetOption(hSocket, SocketReceiveBuffer, 24*1000);
+	//SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
+	//SocketSetOption(hSocket, SocketSendBuffer, 24*1000);
+	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*1000);
+	//SocketSetOption(hSocket, SocketReceiveTimeout, 1000);
+	//SocketSetOption(hSocket, SocketSendTimeout, 1000);
 	SocketSetOption(hSocket, ForceFrameLock, false);
 	SocketBind(hSocket, "0.0.0.0", iSocketPort);
 	SocketListen(hSocket, OnSocketIncoming);
@@ -125,6 +134,8 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	// SocketSend(socket, receiveData);
 	// close the connection/socket/handle if it matches quit
 	char tmp[10];
+
+	//LogMessage("SocketData");
 	/*
 	LogMessage("SocketData");
 	LogMessage("Bytes per Packet");
@@ -145,15 +156,34 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	IntToString(dataSize,tmp,10);
 	LogMessage(tmp);
 	*/
+
+
+
 	for(int i=0;i<dataSize;i++)
 	{
 	    cBuffer[iBufSize+i] = receiveData[i];
 	}
 	iBufSize += dataSize;
 
+
+
 	if( iBufSize >= 24 ) // have all bulk data received
 	{
 	    int iPackSize = iBufSize / 24 ;
+	    /*
+	    LogMessage("packet size");
+	    IntToString(iPackSize,tmp,10);
+	    LogMessage(tmp);
+	    */
+
+	    int div = iBufSize % 24;
+	    if (div > 0)
+	    {
+	        IntToString(div,tmp,10);
+	        LogMessage("div");
+	        LogMessage(tmp);
+	    }
+
 	    //int iPackCount = iBufSize / (4*6);
 	    float[] flHits = new float[iPackSize*6];// = new float[iPackSize*6];
 	    int iHitsCount;
@@ -319,6 +349,23 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        }
 	    }
 	    //send encoded floats
+
+        /*
+	    IntToString(iPackSize*24,tmp,10);
+	    LogMessage("Socket send size");
+        LogMessage(tmp);
+        */
+
+        int[] sendString = new int[iPackSize*24];
+        for(int i=0;i<iPackSize*24;i++)
+        {
+            sendString[i] = cSendBuff[i];
+        }
+        //sendString[iPackSize*24] = 0;
+
+        WriteFile(hFileWrite, sendString, iPackSize*24,1);
+	    FlushFile(hFileWrite);
+
 	    SocketSend(socket,cSendBuff, iPackSize*24);
 
 	    //remove from buffer already sended data
@@ -427,47 +474,47 @@ bool Trace(float flPos[3], float flAngles[3], float flEnd[3])
 	else
 	{
 	    float flHitPosition[3];
-	    flHitPosition[0]=1;
-	    flHitPosition[1]=1;
-	    flHitPosition[2]=1;
+	    flHitPosition[0]=1.0;
+	    flHitPosition[1]=1.0;
+	    flHitPosition[2]=1.0;
 	    if(FloatAbs(flAngles[0]-0)<1)
                 {
                     if(FloatAbs(flAngles[1]-0)<1)
                     {
-                        flHitPosition[0] = flPos[0]+100 ;
-                        flHitPosition[1] = flPos[1]+10 ;
-                        flHitPosition[2] = flPos[2]+10 ;
+                        flHitPosition[0] = flPos[0]+100.0 ;
+                        flHitPosition[1] = flPos[1]+10.0 ;
+                        flHitPosition[2] = flPos[2]+10.0 ;
                     } else
                     if(FloatAbs(flAngles[1]-180)<1)
                     {
-                        flHitPosition[0] = flPos[0]-100 ;
-                        flHitPosition[1] = flPos[1]+10 ;
-                        flHitPosition[2] = flPos[2]+10 ;
+                        flHitPosition[0] = flPos[0]-100.0 ;
+                        flHitPosition[1] = flPos[1]+10.0 ;
+                        flHitPosition[2] = flPos[2]+10.0 ;
                     } else
                     if(FloatAbs(flAngles[1]-90)<1)
                     {
-                        flHitPosition[0] = flPos[0]+10 ;
-                        flHitPosition[1] = flPos[1]+100 ;
-                        flHitPosition[2] = flPos[2]+10 ;
+                        flHitPosition[0] = flPos[0]+10.0 ;
+                        flHitPosition[1] = flPos[1]+100.0 ;
+                        flHitPosition[2] = flPos[2]+10.0 ;
                     } else
                     if(FloatAbs(flAngles[1]+90)<1)
                     {
-                        flHitPosition[0] = flPos[0]+10 ;
-                        flHitPosition[1] = flPos[1]-100 ;
-                        flHitPosition[2] = flPos[2]+10 ;
+                        flHitPosition[0] = flPos[0]+10.0 ;
+                        flHitPosition[1] = flPos[1]-100.0 ;
+                        flHitPosition[2] = flPos[2]+10.0 ;
                     }
                 } else
                 if(FloatAbs(flAngles[0]+90)<1)
                 {
-                        flHitPosition[0] = flPos[0]+10 ;
-                        flHitPosition[1] = flPos[1]+10 ;
-                        flHitPosition[2] = flPos[2]+100 ;
+                        flHitPosition[0] = flPos[0]+10.0 ;
+                        flHitPosition[1] = flPos[1]+10.0 ;
+                        flHitPosition[2] = flPos[2]+100.0 ;
                 } else
                 if(FloatAbs(flAngles[0]-90)<1)
                 {
-                        flHitPosition[0] = flPos[0]+10 ;
-                        flHitPosition[1] = flPos[1]+10 ;
-                        flHitPosition[2] = flPos[2]-100 ;
+                        flHitPosition[0] = flPos[0]+10.0 ;
+                        flHitPosition[1] = flPos[1]+10.0 ;
+                        flHitPosition[2] = flPos[2]-100.0 ;
                 }
         flEnd[0] = flHitPosition[0];
         flEnd[1] = flHitPosition[1];
