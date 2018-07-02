@@ -38,6 +38,7 @@ if __name__ == '__main__':
                         gtime = time()
                         timeStep = 1
                         cnt = 0
+
                         try:
                             if grab.doneCount == 0:
                                 continue

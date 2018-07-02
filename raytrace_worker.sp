@@ -308,7 +308,25 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        flAngle[1] = flRay[4];
 	        flAngle[2] = flRay[5];
 
-	        Trace(flPoint,flAngle,flHit);
+
+
+
+	        //DEBUG
+	        int sendString[32];
+            for(int k=0;k<24;k++)
+            {
+                sendString[k] = chunk[k];
+            }
+            for(int k=24;k<30;k++)
+            {
+                sendString[k] = 48;
+            }
+            sendString[30] = 13;
+            sendString[31] = 10;
+            WriteFile(hFileInput, sendString, 32,1);
+
+
+            Trace(flPoint,flAngle,flHit);
 
 	        int iHitsPos = iHitsCount*6;
 

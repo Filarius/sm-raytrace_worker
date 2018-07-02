@@ -79,8 +79,8 @@ class Server:
                         #print('error socket write value',lray)
                         print("error socket write value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*lray))
                 subpacked = struct.pack(">6f", *lray)
-                file.write(packed + b"000000\r\n")
-                packed += subpacked
+                file.write(subpacked  + b"000000\r\n")
+                packed += struct.pack(">6f", *lray)
                 if len(packed) >= self._bufferLimit:
                     break
             file.flush()
