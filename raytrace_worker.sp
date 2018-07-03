@@ -123,11 +123,12 @@ void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle,float[3]
 
 void CheckNan(float f)
 {
-    if ( (f != 0.0) && (!f))
+    //if ( (f != 0.0) && (!f))
+    if (f != f)
     {
-        char tmp[100];
-        Format(tmp, 100, "NAN ! %.2f ",f);
-        LogMessage(tmp);
+        //char tmp[100];
+        //Format(tmp, 100, "NAN ! %.2f ",f);
+        LogMessage("NAN!");
     }
 }
 
@@ -317,16 +318,29 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
             {
                 sendString[k] = chunk[k];
             }
+            /*
             for(int k=24;k<30;k++)
             {
                 sendString[k] = 48;
             }
             sendString[30] = 13;
             sendString[31] = 10;
-            WriteFile(hFileInput, sendString, 32,1);
+            */
+            WriteFile(hFileInput, sendString, 24,1);
 
+            float ftmp[3];
+            ftmp[0]=flPoint[0];
+            ftmp[1]=flPoint[1];
+            ftmp[2]=flPoint[2];
 
             Trace(flPoint,flAngle,flHit);
+
+            if ((ftmp[0] != flPoint[0])||
+                (ftmp[1] != flPoint[1])||
+                (ftmp[2] != flPoint[2]))
+            {
+              LogMessage("ERROR !");
+            }
 
 	        int iHitsPos = iHitsCount*6;
 
@@ -413,13 +427,15 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
             {
                 sendString[k] = cSendBuff[k+iSendBuffPos-24];
             }
+            /*
             for(int k=24;k<30;k++)
             {
                 sendString[k] = 48;
             }
             sendString[30] = 13;
             sendString[31] = 10;
-            WriteFile(hFileWrite, sendString, 32,1);
+            */
+            WriteFile(hFileWrite, sendString, 24,1);
 	    }
 
         iBufSize = (iBufSize + dataSize) - iPackSize*24;

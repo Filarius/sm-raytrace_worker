@@ -1,6 +1,7 @@
 from server import Server
 from marks import Marks
 from time import sleep, time
+import struct
 
 class Grabber:
     def __init__(self, addr_list, precision=100, ):
@@ -52,6 +53,9 @@ class Grabber:
                 val['b'] = 0
                 val['c'] = 0
             self._angleTree.append(val)
+
+
+            self._hitFile = open("hits.data","wb")
 
     # distance between points
 
@@ -309,8 +313,17 @@ class Grabber:
                 -(ray['z'] - ray['hz']),
             )
 
+
+            m = 40000
+            if abs(ray['hx']) > m:
+                continue
+            if abs(ray['hy']) > m:
+                continue
+            if abs(ray['hz']) > m:
+                continue
+
             '''
-            m = self._precision * 3
+            m = self._precision * 50
             if abs(vector[0]) > m:
                 continue
             if abs(vector[1]) > m:
@@ -318,6 +331,7 @@ class Grabber:
             if abs(vector[2]) > m:
                 continue
             '''
+
 
             # detect fully traced trace paths
             # "10" by 2 times is means raytrace hit nothing
@@ -347,10 +361,16 @@ class Grabber:
                 hit = (ray['hx'], ray['hy'], ray['hz'])
                 hi = (f(hit[0]), f(hit[1]), f(hit[2]))
 
+
+                #write to file
+
+
                 # add or update hits
                 last = self.hits.get(hi, None)
                 if last == None:
                     self.hits[hi] = (hit, distance(hit, node))
+                    string_hit = struct.pack("<3f", *hit)
+                    self._hitFile.write(string_hit)
                 # update point to nearest to grid node
                 else:
                     dist = distance(hit, node)
@@ -363,6 +383,8 @@ class Grabber:
                 # new_ray = self._createRay(x, y, z, 0, 0, 0)
                 # rays_todo.extend(self._makeRayTree(new_ray, vector))
                 self.doneCount += 1
+
+        self._hitFile.flush()
 
         t = self.ray_map_marks.data.intersection(todo)
         # t = todo.intersection(self._ray_map_marks.nested)
