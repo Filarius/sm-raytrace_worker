@@ -12,8 +12,6 @@
 
 ConVar g_hDBName = null;
 Database g_hDatabase = null;
-//const int iPackSize = 50;
- // = iPackSize * 3
 
 char cBuffer[1024000];
 int iBufSize = 0;
@@ -33,12 +31,11 @@ public Plugin myinfo =
 };
 
 ConVar SocketPort;
-int iSocketPort;
 
 public void OnPluginStart()
 {
 	g_hDBName = CreateConVar("sm_filarius_dbname", "default", "name of the database to use");
-	SocketPort = CreateConVar("sm_socket_port", "40000", "name of the database to use");
+	SocketPort = CreateConVar("sm_socket_port", "40000", "socket port to use");
 	SocketSetOption(INVALID_HANDLE, DebugMode, 1);
     DeleteFile("source.txt",false,"");
     hFileWrite = OpenFile("server_output.txt","wb");
@@ -69,7 +66,7 @@ public void OnConfigsExecuted()
 	SocketSetOption(hSocket, SocketSendLowWatermark, 24);
 	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
 	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
-    SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
+    //SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
 	//SocketSetOption(hSocket, SocketSendBuffer, 24*5);
 	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*5);
 	//SocketSetOption(hSocket, SocketReceiveTimeout, 1);
@@ -99,7 +96,12 @@ public void OnSocketError(Handle socket, int errorType, int errorNum, int arg)
 
 void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle,float[3] hit)
 {
+    //TODO
+}
 
+void RayEncode(char[] buffer,int startPos, float[3] pos, float[3] angle,float[3] hit)
+{
+    //TODO
 }
 
 void CheckNan(float f)
@@ -110,10 +112,6 @@ void CheckNan(float f)
     }
 }
 
-float FloatDecode(char[] buffer,int position)
-{
-
-}
 
 public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile)
 {
@@ -289,7 +287,7 @@ public void OnChildSocketError(Handle socket, int errorType, int errorNum, any a
 
 public void OnMapStart()
 {
-	CreateTimer(1.0, Timer_ProcessDB, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	//CreateTimer(1.0, Timer_ProcessDB, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action Cmd_callback(int iArgs)

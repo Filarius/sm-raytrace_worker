@@ -351,14 +351,16 @@ class Grabber:
                 continue
             '''
 
-
-            m = self._precision * 400
+            '''
+            m = self._precision * 40000
+            
             if abs(vector[0]) > m:
                 continue
             if abs(vector[1]) > m:
                 continue
             if abs(vector[2]) > m:
                 continue
+            '''
 
 
 
@@ -374,7 +376,7 @@ class Grabber:
             # generate new rays
 
             if d <= 1:  # ray hit something
-                todo_temp = [0 for x in range(3 * 3 * 3 * 6)]
+
 
                 x = f(ray['x'])
                 y = f(ray['y'])
@@ -408,6 +410,7 @@ class Grabber:
                     if self.hits[hi][1] > dist:
                         self.hits[hi] = (hit, dist)
 
+                todo_temp = [0 for x in range(3 * 3 * 3 * 6)]  # speedup buffer ?
                 new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0), todo_temp)
                 todo.update(new_set)
 

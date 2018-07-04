@@ -9,8 +9,8 @@ class Server:
         self._runFlag = True
         self._sock = socket.socket()
         self._sock.connect(address)
-        self._packetSize = 10000
-        self._bufferLimit = 4096 - 24
+        self._packetSize = 4096
+        self._bufferLimit = 2048 - 24
 
         self._procWrite = Process(target=self._socket_write_loop,
                                        args=(self.queueIn,))
@@ -29,7 +29,7 @@ class Server:
         while self._runFlag:
             file.flush()
             while (len(data) < (24)):
-                newdata = sock.recv(packetSize * 6 * 4)
+                newdata = sock.recv(packetSize)
                 if newdata:
                     data = data + newdata
                     file.write(newdata)
