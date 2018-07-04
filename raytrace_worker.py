@@ -22,7 +22,7 @@ if __name__ == '__main__':
             timeStep = 1
             import os
             #while i <= 1000:
-            while startTime > time()-120*100000000: # limit execution time to 60 seconds
+            while startTime > time()-120*100000: # limit execution time to 60 seconds
                # print(i)
                 i += 1
                 #sleep(0.1)
@@ -35,6 +35,7 @@ if __name__ == '__main__':
                         print("")
                         print('g speed ', cnt / (time() - gtime))
                         print('g count ', cnt)
+                        print("Storage size", len(grab.ray_map_marks.data))
                         print('i= ', i, ' , hits=  ', len(grab.hits))
                         gtime = time()
                         timeStep = 1

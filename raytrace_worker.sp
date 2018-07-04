@@ -39,22 +39,8 @@ public void OnPluginStart()
 {
 	g_hDBName = CreateConVar("sm_filarius_dbname", "default", "name of the database to use");
 	SocketPort = CreateConVar("sm_socket_port", "40000", "name of the database to use");
-	
-	//RegServerCmd("trace", Cmd_callback);
 	SocketSetOption(INVALID_HANDLE, DebugMode, 1);
-    /*
-	Handle socket = SocketCreate(SOCKET_TCP, OnSocketError);
-	SocketSetOption(socket, SocketSendLowWatermark, 24);
-	SocketSetOption(socket, SocketReceiveLowWatermark, 24);
-	SocketSetOption(socket, CallbacksPerFrame, 100000);
-	SocketSetOption(socket, ForceFrameLock, false);
-	SocketBind(socket, "0.0.0.0", 40000);
-	SocketListen(socket, OnSocketIncoming);
-*/
-    // hFileWrite = OpenFile("D:\\FILES\\Code\\20180527 tf2 tracert\\python\\source.txt","wb");
-
     DeleteFile("source.txt",false,"");
-
     hFileWrite = OpenFile("server_output.txt","wb");
     hFileInput = OpenFile("server_input.txt","wb");
 	PrintToServer("Plugin loaded.");
@@ -83,7 +69,7 @@ public void OnConfigsExecuted()
 	SocketSetOption(hSocket, SocketSendLowWatermark, 24);
 	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
 	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
-	//SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
+    SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
 	//SocketSetOption(hSocket, SocketSendBuffer, 24*5);
 	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*5);
 	//SocketSetOption(hSocket, SocketReceiveTimeout, 1);
@@ -97,14 +83,9 @@ public void OnConfigsExecuted()
 public void OnSocketIncoming(Handle socket, Handle newSocket, char[] remoteIP, int remotePort, int arg) 
 {
 	PrintToServer("%s:%d connected", remoteIP, remotePort);
-
-	// setup callbacks required to 'enable' newSocket
-	// newSocket won't process data until these callbacks are set
 	SocketSetReceiveCallback(newSocket, OnChildSocketReceive);
 	SocketSetDisconnectCallback(newSocket, OnChildSocketDisconnected);
 	SocketSetErrorCallback(newSocket, OnChildSocketError);
-
-	//SocketSend(newSocket, "send quit to quit\n");
 }
 
 
@@ -123,54 +104,25 @@ void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle,float[3]
 
 void CheckNan(float f)
 {
-    //if ( (f != 0.0) && (!f))
     if (f != f)
     {
-        //char tmp[100];
-        //Format(tmp, 100, "NAN ! %.2f ",f);
         LogMessage("NAN!");
     }
 }
 
+float FloatDecode(char[] buffer,int position)
+{
+
+}
+
 public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile)
 {
-	// send (echo) the received data back
-	// SocketSend(socket, receiveData);
-	// close the connection/socket/handle if it matches quit
-	char tmp[10];
-
-	//LogMessage("SocketData");
-
-	//LogMessage("SocketData");
-	/*
-	LogMessage("Bytes per Packet");
-	IntToString(iPackSize*4*6,tmp,10);
+    /* Snipet
+    LogMessage("iBufSize");
+    IntToString(iBufSize,tmp,10);
     LogMessage(tmp);
-    LogMessage("Message size");
-	IntToString(dataSize,tmp,10);
-    LogMessage(tmp);
-    LogMessage("Message");
-    LogMessage(receiveData);
     */
-
-/*
-    LogMessage("BuffSize");
-	IntToString(iBufSize,tmp,10);
-	LogMessage(tmp);
-	LogMessage("datasize");
-	IntToString(dataSize,tmp,10);
-	LogMessage(tmp);
-*/
-
-
-    /*
-	for(int i=0;i<dataSize;i++)
-	{
-	    cBuffer[iBufSize+i] = receiveData[i];
-	}
-	iBufSize += dataSize;
-	*/
-
+	char tmp[10];
 	int pointer = 0;
 
 
@@ -179,38 +131,14 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	//if( pointer < ( iBufSize + dataSize ) )// iBufSize >= 24 ) // have all bulk data received
 	{
 	    int iPackSize = (iBufSize + dataSize) / 24 ;
-        /*
-	    LogMessage("packet size");
-	    IntToString(iPackSize,tmp,10);
-	    LogMessage(tmp);
-	    */
-
-
-	    /*
-	    int div = iBufSize % 24;
-	    if (div > 0)
-	    {
-	        IntToString(div,tmp,10);
-	        LogMessage("div");
-	        LogMessage(tmp);
-	    }
-	    */
-
-
-	    //int iPackCount = iBufSize / (4*6);
-	    float[] flHits = new float[iPackSize*6];// = new float[iPackSize*6];
+	    float[] flHits = new float[iPackSize*6];
 	    int iHitsCount;
-        //LogMessage("Decoding");
 
 	    for(int i=0;i<iPackSize;i++) // iterate rays
 	    {
 
 	        char chunk[24];
-	        /*
-	        LogMessage("iBufSize");
-	        IntToString(iBufSize,tmp,10);
-            LogMessage(tmp);
-            */
+
 	        if (pointer < iBufSize)
 	        {
 	            for(int k=0;k<iBufSize;k++)
@@ -233,70 +161,20 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 
 	        }
 	        pointer += 24;
-	        /*
-	        LogMessage("i");
-	        IntToString(i,tmp,10);
-            LogMessage(tmp);
-            */
-	        //int shift = i*24;
 	        int shift = 0;
             float flRay[6];
 	        for(int j=0;j<6;j++) // iterate floats
 	        {
-	            /*
-	            LogMessage("j");
-	            IntToString(j,tmp,10);
-                LogMessage(tmp);a
-                */
 	            int jShift = j*4;
 	            int iVal = 0;
-	            /*
-	            LogMessage("arrayIndex");
-	            IntToString(shift + (jShift + 0),tmp,10);
-                LogMessage(tmp);
-                LogMessage("iVals");
-                */
 	            iVal = chunk[shift + (jShift + 0)];
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = iVal << 8;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = chunk[shift + (jShift + 1)] + iVal;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = iVal << 8;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = chunk[shift + (jShift + 2)] + iVal;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = iVal << 8;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            iVal = chunk[shift + (jShift + 3)] + iVal;
-	            /*
-	            IntToString(iVal,tmp,10);
-                LogMessage(tmp);
-                */
 	            flRay[j] = view_as<float>(iVal);
-
-	            //LogMessage("got float");
-	            //FloatToString(flRay[j],tmp,10);
-                //LogMessage(tmp);
-
 	        }
 	        float flPoint[3];
 	        float flAngle[3];
@@ -309,37 +187,17 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        flAngle[1] = flRay[4];
 	        flAngle[2] = flRay[5];
 
-
-
-
 	        //DEBUG
 	        int sendString[32];
             for(int k=0;k<24;k++)
             {
                 sendString[k] = chunk[k];
             }
-            /*
-            for(int k=24;k<30;k++)
-            {
-                sendString[k] = 48;
-            }
-            sendString[30] = 13;
-            sendString[31] = 10;
-            */
             WriteFile(hFileInput, sendString, 24,1);
 
-            float ftmp[3];
-            ftmp[0]=flPoint[0];
-            ftmp[1]=flPoint[1];
-            ftmp[2]=flPoint[2];
-
-            Trace(flPoint,flAngle,flHit);
-
-            if ((ftmp[0] != flPoint[0])||
-                (ftmp[1] != flPoint[1])||
-                (ftmp[2] != flPoint[2]))
+            if (!Trace(flPoint,flAngle,flHit))
             {
-              LogMessage("ERROR !");
+                continue;
             }
 
 	        int iHitsPos = iHitsCount*6;
@@ -356,138 +214,46 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 
 	    // encode raytracing results
 
-	    char[] cSendBuff= new char[iPackSize*24];
+	    char[] cSendBuff= new char[iHitsCount*24];
 	    int iSendBuffPos = 0;
-	    /*
-	    LogMessage("ENCODING");
-	    LogMessage("SendBuff size");
-	    IntToString(iPackSize*6*4,tmp,10);
-        LogMessage(tmp);
-        */
-	    for(int i=0;i<iPackSize;i++) //iterate ray result
+	    for(int i=0;i<iHitsCount;i++) //iterate ray results
 	    {
-	        /*
-            LogMessage("i");
-            IntToString(i,tmp,10);
-            LogMessage(tmp);
-            */
+
 	        int shift = i*6;
 	        for(int j=0;j<6;j++) //iterate floats
 	        {
-	            /*
-	            LogMessage("j");
-                IntToString(j,tmp,10);
-                LogMessage(tmp);
-                LogMessage("iSendBuffPos");
-                IntToString(iSendBuffPos,tmp,10);
-                LogMessage(tmp);
-                LogMessage("Shift + j");
-                IntToString(shift + j,tmp,10);
-                LogMessage(tmp);
-                LogMessage("Float");
-                FloatToString(flHits[shift + j],tmp,10);
-                LogMessage(tmp);
-                */
                 CheckNan(flHits[shift + j]);
 	            int iTmp = view_as<int>(flHits[shift + j]);
-	            /*
-	            LogMessage("iTmp");
-	            IntToString(iTmp,tmp,10);
-                LogMessage(tmp);
-                LogMessage(cSendBuff[iSendBuffPos+1]);
-                */
 	            cSendBuff[iSendBuffPos+0] = view_as<char>(iTmp  & 255);
 	            iTmp = iTmp  >> 8;
-	            /*
-	            IntToString(iTmp,tmp,10);
-                LogMessage(tmp);
-                LogMessage(cSendBuff[iSendBuffPos+0]);
-                */
 	            cSendBuff[iSendBuffPos+1] = view_as<char>(iTmp  & 255);
 	            iTmp = iTmp  >> 8;
-	            /*
-	            IntToString(iTmp,tmp,10);
-                LogMessage(tmp);
-                LogMessage(cSendBuff[iSendBuffPos+1]);
-                */
 	            cSendBuff[iSendBuffPos+2] = view_as<char>(iTmp  & 255);
 	            iTmp = iTmp  >> 8;
-	            /*
-	            IntToString(iTmp,tmp,10);
-                LogMessage(tmp);
-                LogMessage(cSendBuff[iSendBuffPos+1]);
-                */
 	            cSendBuff[iSendBuffPos+3] = view_as<char>(iTmp  & 255);
 	            iSendBuffPos += 4;
 
 	        }
 
-	        int sendString[32];
+	        int sendString[24];
             for(int k=0;k<24;k++)
             {
                 sendString[k] = cSendBuff[k+iSendBuffPos-24];
             }
-            /*
-            for(int k=24;k<30;k++)
-            {
-                sendString[k] = 48;
-            }
-            sendString[30] = 13;
-            sendString[31] = 10;
-            */
+
             WriteFile(hFileWrite, sendString, 24,1);
 	    }
 
+        //remember tail of received data to use as head for next run
         iBufSize = (iBufSize + dataSize) - iPackSize*24;
         for(int i = 0; i<iBufSize; i++)
         {
             cBuffer[i] = receiveData[iPackSize + i];
         }
 
-
-	    //send encoded floats
-
-        /*
-	    IntToString(iPackSize*24,tmp,10);
-	    LogMessage("Socket send size");
-        LogMessage(tmp);
-        */
-        /*
-        int[] sendString = new int[iPackSize*24];
-        for(int i=0;i<iPackSize*24;i++)
-        {
-            sendString[i] = cSendBuff[i];
-        }
-        */
-        //sendString[iPackSize*24] = 0;
-
-
 	    FlushFile(hFileWrite);
 
-	    SocketSend(socket,cSendBuff, iPackSize*24);
-
-	    //remove from buffer already sended data
-        /*
-	    int bounds = iPackSize*24;
-	    for(int i = bounds; i<iBufSize; i++)
-	    {
-	       // IntToString(i,tmp,10);
-	        cBuffer[i-bounds] = cBuffer[i];
-	    }
-        iBufSize -= bounds;
-        */
-
-
-        /*
-        IntToString(iBufSize,tmp,10);
-        LogMessage(tmp);
-
-	    LogMessage("Bounds");
-	    IntToString(bounds,tmp,10);
-        LogMessage(tmp);
-        IntToString(iBufSize,tmp,10);
-        LogMessage(tmp);
-        */
+	    SocketSend(socket,cSendBuff, iSendBuffPos);
 
 
 	}
@@ -524,7 +290,6 @@ public void OnChildSocketError(Handle socket, int errorType, int errorNum, any a
 public void OnMapStart()
 {
 	CreateTimer(1.0, Timer_ProcessDB, 0, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	
 }
 
 public Action Cmd_callback(int iArgs)
@@ -557,18 +322,6 @@ bool Trace(float flPos[3], float flAngles[3], float flEnd[3])
 	if (TR_DidHit(hTrace))
 	{
 		TR_GetEndPosition(flEnd, hTrace);
-
-        char tmp[255];
-
-        /*
-        LogMessage("tracing");
-        Format(tmp, 255, "%.2f %.2f %.2f",flPos[0],flPos[1],flPos[2] );
-        LogMessage(tmp);
-        Format(tmp, 255, "%.2f %.2f %.2f",flAngles[0],flAngles[1],flAngles[2] );
-        LogMessage(tmp);
-        Format(tmp, 255, "%.2f %.2f %.2f",flEnd[0],flEnd[1],flEnd[2] );
-        LogMessage(tmp);
-        */
 		delete hTrace;
 		return true;
 	}
@@ -620,16 +373,6 @@ bool Trace(float flPos[3], float flAngles[3], float flEnd[3])
         flEnd[0] = flHitPosition[0];
         flEnd[1] = flHitPosition[1];
         flEnd[2] = flHitPosition[2];
-        /*
-	    char tmp[255];
-        LogMessage("tracing");
-        Format(tmp, 255, "%.2f %.2f %.2f",flPos[0],flPos[1],flPos[2] );
-        LogMessage(tmp);
-        Format(tmp, 255, "%.2f %.2f %.2f",flAngles[0],flAngles[1],flAngles[2] );
-        LogMessage(tmp);
-        Format(tmp, 255, "%.2f %.2f %.2f",flEnd[0],flEnd[1],flEnd[2] );
-        LogMessage(tmp);
-        */
 	    delete hTrace;
 	    return false;
 	}
@@ -670,7 +413,7 @@ void ProcessDB(Database hDB)
 		delete hQueryCommit;
 		return;
 	}
-*/
+    */
 	static DBStatement s_hStmt = null;
 	s_hStmt = null;
 
@@ -681,19 +424,12 @@ void ProcessDB(Database hDB)
     int iBulkSize = 300;
 
     float[] faBulkSQL =  new float[iBulkSize*6];
-    //char cBulkSQL[100];
-    //float faBulkSQL[100];
 
     int iBulkSQLSize = iBulkSize*14+50+20;// +20 just for sure
     char[] cBulkSQL = new char[iBulkSQLSize];
-    //cBulkSQL = new char[iBulkSQLSize];
-    // ",(?,?,?,?,?,?)" len 14
-    // "INSERT INTO job_done (x, y, z, hx, hy, hz) VALUES" len 50
 
     StrCat(cBulkSQL,iBulkSQLSize, "INSERT INTO job_done (x, y, z, hx, hy, hz) VALUES ");
     IntToString(iBulkSQLSize,tmp,10);
-	//LogMessage(tmp);
-   //LogMessage(cBulkSQL);
 
     iBulkSize = iBulkSize*6;
 
@@ -711,12 +447,6 @@ void ProcessDB(Database hDB)
 
         if(bFlag)
         {
-            //StrCat(test,8000,"s");
-            //LogMessage(test);
-
-
-            //if (itimeStart < ( GetTime() - 8 ) )
-
 
             irowCount = irowCount + 1;
             flPos[0] = hQuery.FetchFloat(0);
@@ -730,32 +460,8 @@ void ProcessDB(Database hDB)
 		    if (iId > iMaxId)
 			    iMaxId = iId;
 
-            /*
-            if (!s_hStmt)
-                s_hStmt = SQL_PrepareQuery(hDB, "INSERT INTO job_done (x, y, z, hx, hy, hz) VALUES (?, ?, ?, ?, ?, ?);", cError, sizeof(cError));
-            if (!s_hStmt)
-            {
-                LogError("Failed to create statement (error: %s)", cError);
-                break; //Выходим из цикла и очищаем все, что обработали уже
-            }
-            */
 
-            //if (!Trace(flPos, flAngles, flHitPosition))
-            {
-                /*
-                s_hStmt.BindFloat(0, flPos[0]);
-                s_hStmt.BindFloat(1, flPos[1]);
-                s_hStmt.BindFloat(2, flPos[2]);
-                s_hStmt.BindFloat(3, flHitPosition[0]);
-                s_hStmt.BindFloat(4, flHitPosition[1]);
-                s_hStmt.BindFloat(5, flHitPosition[2]);
-                */
-
-
-                //LogMessage("<+= HIT =+>!");
-            }
             if (!Trace(flPos, flAngles, flHitPosition))
-            //else
             {
                 //mark with "10" to detect infinity hit
                 //mark with "100" direction of vector
@@ -798,39 +504,16 @@ void ProcessDB(Database hDB)
                         flHitPosition[1] = flPos[1]+10 ;
                         flHitPosition[2] = flPos[2]-100 ;
                 }
-                /*
-                s_hStmt.BindFloat(0, flPos[0]);
-                s_hStmt.BindFloat(1, flPos[1]);
-                s_hStmt.BindFloat(2, flPos[2]);
-                s_hStmt.BindFloat(3, flHitPosition[0]);
-                s_hStmt.BindFloat(4, flHitPosition[1]);
-                s_hStmt.BindFloat(5, flHitPosition[2]);
-                */
-                //LogMessage("No hit.");
+
             }
 
-            //IntToString(iInx,tmp,10);
-            //LogMessage(tmp);
-            //IntToString(iBulkSize,tmp,10);
-            //LogMessage(tmp);
+
             faBulkSQL[iInx+0] = flPos[0];
             faBulkSQL[iInx+1] = flPos[1];
             faBulkSQL[iInx+2] = flPos[2];
             faBulkSQL[iInx+3] = flHitPosition[0];
             faBulkSQL[iInx+4] = flHitPosition[1];
             faBulkSQL[iInx+5] = flHitPosition[2];
-
-            //LogMessage("Before Add");
-            //IntToString(iBulkSQLSize,tmp,10);
-            //LogMessage(tmp);
-            //LogMessage("index");
-            //IntToString(iInx,tmp,10);
-            //LogMessage(tmp);
-            //LogMessage(cBulkSQL);
-            //LogMessage("iBulkSize");
-            //IntToString(iBulkSize,tmp,10);
-            //LogMessage(tmp);
-
 
             if(iInx==0)
             {
@@ -840,17 +523,7 @@ void ProcessDB(Database hDB)
             {
                StrCat(cBulkSQL,iBulkSQLSize,",(?,?,?,?,?,?)");
             }
-            //LogMessage(cBulkSQL);
-            //LogMessage("StrLen");
             int len;
-            //len = strlen(cBulkSQL);
-            //IntToString(len,tmp,10);
-            //LogMessage(tmp);
-
-            //LogMessage("After Add");
-            //LogMessage(cBulkSQL);
-            //LogMessage("BULK ARRAY SIZE");
-
             iInx = iInx + 6;
 		}
 
@@ -887,63 +560,33 @@ void ProcessDB(Database hDB)
 
                 {
                     LogError("Failed to create statement (error: %s)", cError);
-                    break; //Выходим из цикла и очищаем все, что обработали уже
+                    break;
                 }
-               //LogMessage("After prepare");
 
                 for(int i=0;i<iInx;i++)
                 {
                     s_hStmt.BindFloat(i, faBulkSQL[i]);
                 }
-               //LogMessage("After bind loop");
 
                 if (!SQL_Execute(s_hStmt))
                 {
                     if (SQL_GetError(s_hStmt, cError, sizeof(cError)))
                         LogError("Failed to query statement (error: %s)", cError);
-                    break; //Выходим из цикла и очищаем все, что обработали уже
+                    break;
                 }
-
-
-               //LogMessage("After execute");
 
                 iInx = 0;
                 Format(cBulkSQL, iBulkSQLSize, "INSERT INTO job_done (x, y, z, hx, hy, hz) VALUES",iInx ); //cheat to write to char[]
 
-               //LogMessage("After replace");
-
-               //LogMessage("Reset");
-
-		       //LogMessage(cBulkSQL);
-
-
 		}
-		/*
-	    if (fTime < ( GetEngineTime() - 6 ) )
-	    {
-	       //LogMessage("Exiting before full process");
-	        break;
-	    }
-	    */
 
 	}
 
-
-   //LogMessage("timer");
-    /*
-	if (!(hQueryCommit = SQL_Query(hDB, "COMMIT;")))
-	{
-		PrintSQLError(hDB);
-		delete hQuery;
-		return;
-
-	}
-	*/
 
     if(irowCount > 0)
     {
         char mesg[100];
-        Format(mesg, 100, "Processed: %i rows for %i secound", irowCount,GetTime() - itimeStart);
+        Format(mesg, 100, "Processed: %i rows in %i secound", irowCount,GetTime() - itimeStart);
         IntToString(irowCount,mesg,10);
         LogMessage("Rows processed: ",irowCount);
         LogMessage(mesg);
@@ -975,10 +618,5 @@ void ProcessDB(Database hDB)
 		calc = (GetEngineTime()-fTime)*1000/irowCount;
 		Format(s, 256, "Time per 1k: %f", calc);
 		LogMessage(s);
-        //char cDelQuery[128];
-		//Format(cDelQuery, 128, "DELETE FROM `job_query` WHERE `id` <= %i;", iMaxId);
-		//if (!SQL_FastQuery(hDB, cDelQuery, iMaxId))
-		//    LogError(cDelQuery);
-		//	PrintSQLError(hDB);
 	}
 }

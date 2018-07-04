@@ -36,10 +36,6 @@ class Server:
 
 
 
-
-
-
-
             size = len(data)
             size = size - (size % 24)
             hits = []
@@ -49,15 +45,19 @@ class Server:
                 #file.flush()
                 #file.write(packed)#+b"000000\r\n")
                 unpacked = struct.unpack("<6f", packed)
+                haveNAN = False
                 for val in unpacked:
-                    if math.isnan(val):
+                    if math.isnan(val) or math.isinf(val):
+                        haveNAN = True
+                        break;
                         print("error socket read value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*unpacked))
                         #print(''.join('{:02X}'.format(a) for a in packed))
                         print( 1)
                         print([packed[i:i+1] for i in range(len(packed))])
 
                 # print()
-                hits.append(unpacked)
+                if not haveNAN:
+                    hits.append(unpacked)
             #file.flush()
 
             size = len(data)

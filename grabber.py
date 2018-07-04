@@ -2,6 +2,7 @@ from server import Server
 from marks import Marks
 from time import sleep, time
 import struct
+import math
 
 class Grabber:
     def __init__(self, addr_list, precision=100, ):
@@ -28,6 +29,7 @@ class Grabber:
         self._angleTree = []
         for i in range(6):
             val = dict()
+            # -x +x -y +y -z +z
             if i == 0:
                 val['a'] = 0
                 val['b'] = 180
@@ -54,8 +56,18 @@ class Grabber:
                 val['c'] = 0
             self._angleTree.append(val)
 
+        # populate directions tree
+        self._directionTree = {
+                (-1,0,0):0,
+                (1,0,0):1,
+                (0,-1,0):2,
+                (0,1,0):3,
+                (0,0,-1):4,
+                (0,0,1):5
+            }
 
-            self._hitFile = open("hits.data","wb")
+
+        self._hitFile = open("hits.data","wb")
 
     # distance between points
 
@@ -125,6 +137,21 @@ class Grabber:
         # pass
 
         return ray
+
+    '''
+    def _ray_get_direction(self,vector):
+        #normalize
+        a = vector[0]
+        b = vector[1]
+        c = vector[2]
+        r = math.sqrt(a*a+b*b+c*c)
+        a = a / r
+        b = b / r
+        c = c / r
+        z = 0.8
+        if a < -z:
+            return
+    '''
 
     def _make_ray_tree(self, ray, todo=[0 for x in range(3 * 3 * 3 * 6)], vector=None):
         '''
@@ -248,9 +275,9 @@ class Grabber:
         max = 0.0
         k = -1
 
-        print("len vector", len(vector))
-        print("vector", vector)
-        print("range", list(range(len(vector))))
+        #print("len vector", len(vector))
+        #print("vector", vector)
+        #print("range", list(range(len(vector))))
         for i in range(len(vector)):
             if max < abs(vector[i]):
                 max = abs(vector[i])
@@ -314,6 +341,7 @@ class Grabber:
             )
 
 
+            '''
             m = 40000
             if abs(ray['hx']) > m:
                 continue
@@ -321,16 +349,17 @@ class Grabber:
                 continue
             if abs(ray['hz']) > m:
                 continue
-
             '''
-            m = self._precision * 50
+
+
+            m = self._precision * 400
             if abs(vector[0]) > m:
                 continue
             if abs(vector[1]) > m:
                 continue
             if abs(vector[2]) > m:
                 continue
-            '''
+
 
 
             # detect fully traced trace paths
@@ -350,7 +379,7 @@ class Grabber:
                 x = f(ray['x'])
                 y = f(ray['y'])
                 z = f(ray['z'])
-                #ri = (x, y, z)
+                ri = (x, y, z)
 
 
                 xr = fToReal(ray['x'])
@@ -360,6 +389,8 @@ class Grabber:
 
                 hit = (ray['hx'], ray['hy'], ray['hz'])
                 hi = (f(hit[0]), f(hit[1]), f(hit[2]))
+
+                self.ray_map_marks.set_ray(ri,hi,None,10)
 
 
                 #write to file
