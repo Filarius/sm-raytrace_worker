@@ -4,15 +4,38 @@ from time import sleep, time
 import struct
 import math
 
+# populate angle_tree map
+# direction -> angles
+# order :  -x +x -y +y -z +z
+ANGLE_TREE = {
+                0: {'a': 0,   'b': 180, 'c': 0},
+                1: {'a': 0,   'b': 0,   'c': 0},
+                2: {'a': 0,   'b': -90, 'c': 0},
+                3: {'a': 0,   'b': 90,  'c': 0},
+                4: {'a': 90,  'b': 0,   'c': 0},
+                5: {'a': -90, 'b': 0,   'c': 0},
+            }
+def ray_set_direction(ray, dir, precision):
+        ray = dict(ray)
+        angle = ANGLE_TREE[dir]
+        # convert zoom maping to real coordinates
+        ray['x'] *= precision
+        ray['y'] *= precision
+        ray['z'] *= precision
+        ray['a'] = angle['a']
+        ray['b'] = angle['b']
+        ray['c'] = angle['c']
+
+        return ray
+
+
 class Grabber:
-    def __init__(self, addr_list, precision=100, ):
+    def __init__(self, addr_list, precision=100 ):
         if not isinstance(addr_list, list):
             raise AttributeError
 
         self._servers = []
-        for address in addr_list:
-            server = Server(address)
-            self._servers.append(server)
+        self._servers = [Server(address) for address in addr_list]
         self._servIndex = 0
 
 
@@ -25,45 +48,14 @@ class Grabber:
         self.raysCount = 0
         self.timeDelta = 0
 
-        # populate angle_tree map
-        self._angleTree = []
-        for i in range(6):
-            val = dict()
-            # -x +x -y +y -z +z
-            if i == 0:
-                val['a'] = 0
-                val['b'] = 180
-                val['c'] = 0
-            if i == 1:
-                val['a'] = 0
-                val['b'] = 0
-                val['c'] = 0
-            if i == 2:
-                val['a'] = 0
-                val['b'] = -90
-                val['c'] = 0
-            if i == 3:
-                val['a'] = 0
-                val['b'] = 90
-                val['c'] = 0
-            if i == 4:
-                val['a'] = 90
-                val['b'] = 0
-                val['c'] = 0
-            if i == 5:
-                val['a'] = -90
-                val['b'] = 0
-                val['c'] = 0
-            self._angleTree.append(val)
-
         # populate directions tree
         self._directionTree = {
-                (-1,0,0):0,
-                (1,0,0):1,
-                (0,-1,0):2,
-                (0,1,0):3,
-                (0,0,-1):4,
-                (0,0,1):5
+                (-1, 0, 0): 0,
+                (1, 0, 0): 1,
+                (0, -1, 0): 2,
+                (0, 1, 0): 3,
+                (0, 0, -1): 4,
+                (0, 0, 1): 5
         }
 
         #debug
@@ -91,55 +83,7 @@ class Grabber:
         return ray
 
     # create ray from reference ray in given direction from infinity or not
-    def _ray_set_direction(self, ray, dir, inf=True):
-        ray = dict(ray)
-        angle = self._angleTree[dir]
-        '''
-        if dir == '+x':
-            ray['a'] = 0
-            ray['b'] = 0
-            ray['c'] = 0
-        if dir == '-x':
-            ray['a'] = 0
-            ray['b'] = 180
-            ray['c'] = 0
-        if dir == '+y':
-            ray['a'] = 0
-            ray['b'] = 90
-            ray['c'] = 0
-        if dir == '-y':
-            ray['a'] = 0
-            ray['b'] = -90
-            ray['c'] = 0
-        if dir == '+z':
-            ray['a'] = -90
-            ray['b'] = 0
-            ray['c'] = 0
-        if dir == '-z':
-            ray['a'] = 90
-            ray['b'] = 0
-            ray['c'] = 0
 
-
-        x = dir[1]
-        y = dir[0] == '+'
-        z = self._precision if y else -self._precision
-        ray[x] += z
-        '''
-        # convert zoom maping to real coordinates
-        ray['x'] *= self._precision
-        ray['y'] *= self._precision
-        ray['z'] *= self._precision
-        ray['a'] = angle['a']
-        ray['b'] = angle['b']
-        ray['c'] = angle['c']
-
-        # if infinity - shift ray start position based on direction
-        # if inf:
-        #    ray[dir[1]] = -INFINITY if (dir[0] == '+') else +INFINITY
-        # pass
-
-        return ray
 
     '''
     def _ray_get_direction(self,vector):
@@ -220,7 +164,7 @@ class Grabber:
                         #    self._ray_map_marks.set(ti, False)
                         # i += 1
 
-        return (todo)
+        return todo
 
     def init(self):
         ray = self._create_ray(0, 0, 0, 0, 0, 0)
@@ -230,7 +174,7 @@ class Grabber:
             new_ray = list(ray)[:3]
             new_ray.extend([0, 0, 0])
             new_ray = self._create_ray(*new_ray)
-            jobs.append(self._ray_set_direction(new_ray, ray[3]))
+            jobs.append(ray_set_direction(new_ray, ray[3]),self._precision)
         # self.tf2.addTrace(ray_tree)
         # self.addJobs(ray_tree)
         self.add_jobs(jobs)
@@ -317,25 +261,21 @@ class Grabber:
 
         # rays = self.tf2.getPoints()
         dt = time()
-        distance = self._distance
+
         self.doneCount = 0
         step = self._precision
 
         # print("mark2")
-        rays_todo = []
-        db_id = 0
+
+
         # mark job done
         # dict_keys = ['x','y','z','hx','hy','hz']
 
         f = lambda x: int(round(x / step))
         fToReal = lambda x: x * step
 
-        # print("mark3")
-        # print(len(rays))
         todo = set()
         for ray in rays:
-            # if db_id < ray['id']:
-            #    db_id = ray['id']
 
             vector = (
                 -(ray['x'] - ray['hx']),
@@ -410,8 +350,6 @@ class Grabber:
                 #self.ray_map_marks.set_ray(ri,hi,None,3)
 
 
-                #write to file
-
 
                 # add or update hits
                 """
@@ -434,8 +372,8 @@ class Grabber:
                     string_hit = struct.pack("<3f", *node)
                     self._hitFile.write(string_hit)
                 '''
-                last = self.hits.get(hi, None)
-                if last == None:
+
+                if hi in self.hits:
                     self.hits[hi] = hit
                     #string_hit = struct.pack("<3f", *hit)
                     string_hit = struct.pack("<6f", *hit,*node)
@@ -459,22 +397,10 @@ class Grabber:
         rays_todo = []
         for data in todo:
             ray = self._create_ray(data[0], data[1], data[2], 0, 0, 0)
-            dir = data[3]
-            rays_todo.append(self._ray_set_direction(ray, dir))
+            direction = data[3]
+            rays_todo.append(ray_set_direction(ray, direction, self._precision))
 
-            # remove existed rays
-            # for ray in rays_todo:
         if len(rays_todo) > 0:
-            # sub_rays = list(self.chunkIt(rays_todo, len(self._servers)))
-            # servers = self._servers
-            # for sub_rays, server in zip(self.chunkIt(rays_todo, len(self._servers)), self._servers):
-            #     server.queueIn.put(sub_rays)
             self.add_jobs(rays_todo)
 
-
-            # self._tf2.addTrace(rays_todo)
-        # cleanup in DB
-        if db_id > 0:
-            self._tf2.deletePoints(db_id)
-        # print("mark end")
         self.timeDelta = time() - dt
