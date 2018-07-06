@@ -9,7 +9,7 @@ if __name__ == '__main__':
         servers.append(('192.168.1.110', 40000))
         #servers.append(('192.168.1.110', 40001))
         #servers.append(('192.168.1.110', 40002))
-        grab = Grabber(addr_list=servers, precision=10)
+        grab = Grabber(addr_list=servers, precision=5)
 
         grab.init()
         #sleep(1)

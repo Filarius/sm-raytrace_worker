@@ -64,7 +64,10 @@ class Grabber:
                 (0,1,0):3,
                 (0,0,-1):4,
                 (0,0,1):5
-            }
+        }
+
+        #debug
+        self.min = precision
 
 
         self._hitFile = open("hits.data","wb")
@@ -351,8 +354,8 @@ class Grabber:
                 continue
             '''
 
-            '''
-            m = self._precision * 40000
+
+            m = self._precision * 2
             
             if abs(vector[0]) > m:
                 continue
@@ -360,16 +363,26 @@ class Grabber:
                 continue
             if abs(vector[2]) > m:
                 continue
-            '''
 
 
+
+
+
+            #ignore hit from inside of solid body
+            lng = abs(vector[0]) + abs(vector[1]) + abs(vector[2])
+            if lng == 0.0:
+                continue
 
             # detect fully traced trace paths
-            # "10" by 2 times is means raytrace hit nothing
+            # "10" by 2 times is me1 if (abs(vector[0] - 10) < 1) else 0
             # then 100 is direction marker
-            d1 = 1 if (abs(vector[0] - 10) < 1) else 0
-            d2 = 1 if (abs(vector[1] - 10) < 1) else 0
-            d3 = 1 if (abs(vector[2] - 10) < 1) else 0
+            d1 = 1 if (abs(vector[0] - 10) < 0.1) else 0
+            d2 = 1 if (abs(vector[1] - 10) < 0.1) else 0
+            d3 = 1 if (abs(vector[2] - 10) < 0.1) else 0
+
+
+
+
 
             d = d1 + d2 + d3
 
@@ -377,28 +390,31 @@ class Grabber:
 
             if d <= 1:  # ray hit something
 
-
                 x = f(ray['x'])
                 y = f(ray['y'])
                 z = f(ray['z'])
                 ri = (x, y, z)
 
-
+                '''
                 xr = fToReal(ray['x'])
                 yr = fToReal(ray['y'])
                 zr = fToReal(ray['z'])
                 node = (xr, yr, zr)
+                '''
+
+                node = (ray['x'], ray['y'], ray['z'])
 
                 hit = (ray['hx'], ray['hy'], ray['hz'])
                 hi = (f(hit[0]), f(hit[1]), f(hit[2]))
 
-                self.ray_map_marks.set_ray(ri,hi,None,10)
+                #self.ray_map_marks.set_ray(ri,hi,None,3)
 
 
                 #write to file
 
 
                 # add or update hits
+                """
                 last = self.hits.get(hi, None)
                 if last == None:
                     self.hits[hi] = (hit, distance(hit, node))
@@ -409,6 +425,21 @@ class Grabber:
                     dist = distance(hit, node)
                     if self.hits[hi][1] > dist:
                         self.hits[hi] = (hit, dist)
+                """
+
+                '''
+                last = self.hits.get(ri, None)
+                if last == None:
+                    self.hits[hi] = node
+                    string_hit = struct.pack("<3f", *node)
+                    self._hitFile.write(string_hit)
+                '''
+                last = self.hits.get(hi, None)
+                if last == None:
+                    self.hits[hi] = hit
+                    #string_hit = struct.pack("<3f", *hit)
+                    string_hit = struct.pack("<6f", *hit,*node)
+                    self._hitFile.write(string_hit)
 
                 todo_temp = [0 for x in range(3 * 3 * 3 * 6)]  # speedup buffer ?
                 new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0), todo_temp)
