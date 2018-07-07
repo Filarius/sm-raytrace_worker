@@ -47,9 +47,9 @@ Handle hSocket;
 
 public void OnPluginEnd()
 {
- CloseHandle(hSocket);
- CloseHandle(hFileWrite);
- CloseHandle(hFileInput);
+    CloseHandle(hSocket);
+    CloseHandle(hFileWrite);
+    CloseHandle(hFileInput);
 }
 
 
@@ -286,7 +286,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
 	        }
 
 	    }*/
-	    SocketSend(socket,cSendBuff, iSendBuffPos);
+        SocketSend(socket,cSendBuff, iSendBuffPos);
 
 
 	}
