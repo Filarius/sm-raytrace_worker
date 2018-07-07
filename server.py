@@ -10,7 +10,7 @@ class Server:
         self._sock = socket.socket()
         self._sock.connect(address)
         self._packetSize = 4096
-        self._bufferLimit = 2048 - 24
+        self._bufferLimit = 3500
 
         self._procWrite = Process(target=self._socket_write_loop,
                                        args=(self.queueIn,))
@@ -23,16 +23,19 @@ class Server:
 
     def _socket_read_loop(self, queue):
         data = b""
+        readpack = b""
         packetSize = self._packetSize
         sock = self._sock
         file = open("client_read.txt","wb")
         while self._runFlag:
-            file.flush()
+
             while (len(data) < (24)):
                 newdata = sock.recv(packetSize)
                 if newdata:
                     data = data + newdata
-                    file.write(newdata)
+                    #file.write(newdata)
+                    #file.flush()
+
 
 
 
@@ -41,10 +44,12 @@ class Server:
             hits = []
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
-                #file.write(packed)
-                #file.flush()
+                #writestring = packed
+                file.write(packed[0:12])
+                file.flush()
                 #file.write(packed)#+b"000000\r\n")
-                unpacked = struct.unpack("<6f", packed)
+                unpacked = struct.unpack(">6f", packed)
+
                 haveNAN = False
                 for val in unpacked:
                     if math.isnan(val) or math.isinf(val):
@@ -70,10 +75,12 @@ class Server:
 
     def _socket_write_loop(self, queue):
         packed = b""
+        writepack = b""
         indxIn = 0
         lst = []
         sock = self._sock
         file = open("client_write.txt", "wb")
+        debug = []
 
         while self._runFlag:
             if not lst: #list is empty
@@ -90,14 +97,18 @@ class Server:
                     if math.isnan(val):
                         #print('error socket write value',lray)
                         print("error socket write value {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}".format(*lray))
-                subpacked = struct.pack(">6f", *lray)
+                writepack = writepack + struct.pack(">3f", *(ray['x'], ray['y'], ray['z']))
+
                 #file.write(subpacked)#  + b"000000\r\n")
-                packed += struct.pack(">6f", *lray)
+                packed = packed + struct.pack(">6f", *lray)
+
                 if len(packed) >= self._bufferLimit:
                     break
 
-            file.write(packed)
+            #file.write(packed)
+            file.write(writepack)
             file.flush()
+            writepack = b""
 
             sock.sendall(packed)
             packed = b""

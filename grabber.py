@@ -15,6 +15,8 @@ ANGLE_TREE = {
                 4: {'a': 90,  'b': 0,   'c': 0},
                 5: {'a': -90, 'b': 0,   'c': 0},
             }
+
+
 def ray_set_direction(ray, dir, precision):
         ray = dict(ray)
         angle = ANGLE_TREE[dir]
@@ -37,7 +39,6 @@ class Grabber:
         self._servers = []
         self._servers = [Server(address) for address in addr_list]
         self._servIndex = 0
-
 
         self._precision = precision
 
@@ -163,6 +164,13 @@ class Grabber:
 
                         #    self._ray_map_marks.set(ti, False)
                         # i += 1
+        for r in todo:
+            if abs(ray['x']-r[0])>2:
+                print('кавабанга')
+            if abs(ray['y']-r[1])>2:
+                print('кавабанга')
+            if abs(ray['z']-r[2])>2:
+                print('кавабанга')
 
         return todo
 
@@ -174,7 +182,7 @@ class Grabber:
             new_ray = list(ray)[:3]
             new_ray.extend([0, 0, 0])
             new_ray = self._create_ray(*new_ray)
-            jobs.append(ray_set_direction(new_ray, ray[3]),self._precision)
+            jobs.append(ray_set_direction(new_ray, ray[3], self._precision))
         # self.tf2.addTrace(ray_tree)
         # self.addJobs(ray_tree)
         self.add_jobs(jobs)
@@ -373,7 +381,7 @@ class Grabber:
                     self._hitFile.write(string_hit)
                 '''
 
-                if hi in self.hits:
+                if not hi in self.hits:
                     self.hits[hi] = hit
                     #string_hit = struct.pack("<3f", *hit)
                     string_hit = struct.pack("<6f", *hit,*node)

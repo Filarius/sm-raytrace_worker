@@ -8,7 +8,7 @@
 #include <sdktools>
 #include <socket>
 
-#pragma newdecls required
+//pragma newdecls required
 
 ConVar g_hDBName = null;
 Database g_hDatabase = null;
@@ -65,7 +65,7 @@ public void OnConfigsExecuted()
 	hSocket = SocketCreate(SOCKET_TCP, OnSocketError);
 	SocketSetOption(hSocket, SocketSendLowWatermark, 24);
 	SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
-	SocketSetOption(hSocket, CallbacksPerFrame, 100000);
+	SocketSetOption(hSocket, CallbacksPerFrame, 1);
     //SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
 	//SocketSetOption(hSocket, SocketSendBuffer, 24*5);
 	//SocketSetOption(hSocket, SocketReceiveBuffer, 24*5);
@@ -77,7 +77,7 @@ public void OnConfigsExecuted()
 }
 
 
-public void OnSocketIncoming(Handle socket, Handle newSocket, char[] remoteIP, int remotePort, int arg) 
+public  OnSocketIncoming(Handle socket, Handle newSocket, char[] remoteIP, int remotePort, int arg)
 {
 	PrintToServer("%s:%d connected", remoteIP, remotePort);
 	SocketSetReceiveCallback(newSocket, OnChildSocketReceive);
@@ -86,7 +86,8 @@ public void OnSocketIncoming(Handle socket, Handle newSocket, char[] remoteIP, i
 }
 
 
-public void OnSocketError(Handle socket, int errorType, int errorNum, int arg)
+//public void OnSocketError(Handle socket, int errorType, int errorNum, int arg)
+public  OnSocketError(Handle:socket, const errorType, const errorNum, any:arg)
 { 
 
 	LogError("socket error %d (errno %d)", errorType, errorNum);
@@ -113,7 +114,7 @@ void CheckNan(float f)
 }
 
 
-public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile)
+public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile)
 {
     /* Snipet
     LogMessage("iBufSize");
@@ -186,12 +187,13 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        flAngle[2] = flRay[5];
 
 	        //DEBUG
-	        int sendString[32];
+	        int sendString[24];
             for(int k=0;k<24;k++)
             {
                 sendString[k] = chunk[k];
             }
-            WriteFile(hFileInput, sendString, 24,1);
+            //WriteFile(hFileInput, sendString, 24,1);
+            WriteFile(hFileInput, sendString, 12,1);
 
             if (!Trace(flPoint,flAngle,flHit))
             {
@@ -220,18 +222,19 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 	        int shift = i*6;
 	        for(int j=0;j<6;j++) //iterate floats
 	        {
-                CheckNan(flHits[shift + j]);
+                //CheckNan(flHits[shift + j]);
 	            int iTmp = view_as<int>(flHits[shift + j]);
-	            cSendBuff[iSendBuffPos+0] = view_as<char>(iTmp  & 255);
-	            iTmp = iTmp  >> 8;
-	            cSendBuff[iSendBuffPos+1] = view_as<char>(iTmp  & 255);
+	            cSendBuff[iSendBuffPos+3] = view_as<char>(iTmp  & 255);
 	            iTmp = iTmp  >> 8;
 	            cSendBuff[iSendBuffPos+2] = view_as<char>(iTmp  & 255);
 	            iTmp = iTmp  >> 8;
-	            cSendBuff[iSendBuffPos+3] = view_as<char>(iTmp  & 255);
+	            cSendBuff[iSendBuffPos+1] = view_as<char>(iTmp  & 255);
+	            iTmp = iTmp  >> 8;
+	            cSendBuff[iSendBuffPos+0] = view_as<char>(iTmp  & 255);
 	            iSendBuffPos += 4;
 
 	        }
+
 
 	        int sendString[24];
             for(int k=0;k<24;k++)
@@ -239,16 +242,28 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
                 sendString[k] = cSendBuff[k+iSendBuffPos-24];
             }
 
-            WriteFile(hFileWrite, sendString, 24,1);
+            //WriteFile(hFileWrite, sendString, 24,1);
+            WriteFile(hFileWrite, sendString, 12,1);
+
 	    }
 
         //remember tail of received data to use as head for next run
         iBufSize = (iBufSize + dataSize) - iPackSize*24;
+
+
         for(int i = 0; i<iBufSize; i++)
         {
-            cBuffer[i] = receiveData[iPackSize + i];
+            cBuffer[i] = receiveData[iPackSize*24 + i];
+        }
+/*
+        int[] sendString = new int[iSendBuffPos];
+        for(int i = 0; i<iSendBuffPos; i++)
+        {
+            sendString[i] = cSendBuff[i];
         }
 
+        WriteFile(hFileWrite, sendString, iSendBuffPos,1);
+        */
 	    FlushFile(hFileWrite);
 
 	    SocketSend(socket,cSendBuff, iSendBuffPos);
@@ -258,14 +273,14 @@ public void OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize
 
 }
 
-public void OnChildSocketDisconnected(Handle socket, int hFile) 
+public  OnChildSocketDisconnected(Handle socket, int hFile)
 {
 	// remote side disconnected
 
 	CloseHandle(socket);
 }
 
-public void OnChildSocketError(Handle socket, int errorType, int errorNum, any ary) 
+public  OnChildSocketError(Handle socket, int errorType, int errorNum, any ary)
 {
 	// a socket error occured
 
