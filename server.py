@@ -10,7 +10,7 @@ class Server:
         self._sock = socket.socket()
         self._sock.connect(address)
         self._packetSize = 4096
-        self._bufferLimit = 1024*2
+        self._bufferLimit = 1024*4
 
         self._procWrite = Process(target=self._socket_write_loop,
                                        args=(self.queueIn,))
@@ -100,8 +100,8 @@ class Server:
                 #file.write(subpacked)#  + b"000000\r\n")
                 packed = packed + struct.pack(">6f", *lray)
 
-                if len(packed) >= self._bufferLimit:
-                    break
+                #if len(packed) >= self._bufferLimit:
+                #    break
 
             #file.write(packed)
             file.write(writepack)

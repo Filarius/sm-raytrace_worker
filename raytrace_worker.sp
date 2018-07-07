@@ -1,4 +1,5 @@
 #pragma semicolon 1
+#pragma dynamic 409600
 
 #define DEBUG
 #define PLUGIN_VERSION "0.1"
@@ -11,7 +12,7 @@ ConVar SocketPort;
 ConVar g_hDBName = null;
 Database g_hDatabase = null;
 
-char cBuffer[1024000];
+char cBuffer[2400];
 int iBufSize = 0;
 
 File hFileWrite;
@@ -86,24 +87,45 @@ void CheckNan(float f) {
     }
 }
 
+int iterator_read = 0;
+int iterator_write = 0;
+
 public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int hFile) {
     /*
         Snippet
+
         LogMessage("iBufSize");
         IntToString(iBufSize,tmp,10);
         LogMessage(tmp);
-    */
 
-    char tmp[10];
+    */
+    char tmp[100];
+    int temp[1];
+
+    for (int i=0; i < dataSize; i++)
+    {
+        if (iterator_read < 12){
+            temp[0] = receiveData[i];
+            WriteFile(hFileInput, temp, 1, 1);
+        }
+        iterator_read = iterator_read + 1;
+        if (iterator_read == 24)
+        {
+            iterator_read = 0;
+        }
+    }
+    FlushFile(hFileInput);
+
+
     int pointer = 0;
     int iPackSize = (iBufSize + dataSize) / 24;
+
     float[] flHits = new float[iPackSize*6];
     int iHitsCount;
 
     // iterate over chunks
     for (int i=0; i < iPackSize; i++) {
         char chunk[24];
-        int shift = 0;
         float flRay[6];
 
         if (pointer < iBufSize) {
@@ -127,13 +149,13 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
             int jShift = j * 4;
             int iVal = 0;
 
-            iVal = chunk[shift + (jShift + 0)];
+            iVal = chunk[jShift + 0];
             iVal = iVal << 8;
-            iVal = chunk[shift + (jShift + 1)] + iVal;
+            iVal = chunk[jShift + 1] + iVal;
             iVal = iVal << 8;
-            iVal = chunk[shift + (jShift + 2)] + iVal;
+            iVal = chunk[jShift + 2] + iVal;
             iVal = iVal << 8;
-            iVal = chunk[shift + (jShift + 3)] + iVal;
+            iVal = chunk[jShift + 3] + iVal;
             flRay[j] = view_as<float>(iVal);
         }
 
@@ -156,7 +178,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         }
 
         // 12 bytes contain only start positions 
-        WriteFile(hFileInput, sendString, 12, 1);
+        //WriteFile(hFileInput, sendString, 12, 1);
 
         if (!Trace(flPoint, flAngle, flHit)){
             continue;
@@ -173,7 +195,6 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
 
         iHitsCount += 1;
     }
-
     // encode results
 
     char[] cSendBuff= new char[iHitsCount*24];
@@ -198,6 +219,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
             cSendBuff[iSendBuffPos + 0] = view_as<char>(iTmp & 255);
             iSendBuffPos += 4;
         }
+        /*
 
         int sendString[24];
 
@@ -205,7 +227,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
             sendString[k] = cSendBuff[k + iSendBuffPos - 24];
         }
 
-        WriteFile(hFileWrite, sendString, 12,1);
+        WriteFile(hFileWrite, sendString, 12,1);*/
     }
 
     // save tail of received data to use as head in next run
@@ -215,6 +237,20 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         cBuffer[i] = receiveData[iPackSize * 24 + i];
     }
 
+    //FlushFile(hFileWrite);
+
+    for (int i=0; i < iSendBuffPos; i++)
+    {
+        if (iterator_write < 12){
+            temp[0] = cSendBuff[i];
+            WriteFile(hFileWrite, temp, 1, 1);
+        }
+        iterator_write = iterator_write + 1;
+        if (iterator_write == 24)
+        {
+            iterator_write = 0;
+        }
+    }
     FlushFile(hFileWrite);
 
     SocketSend(socket,cSendBuff, iSendBuffPos);
