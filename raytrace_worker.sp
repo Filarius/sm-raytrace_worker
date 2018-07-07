@@ -236,14 +236,15 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
 	        }
 
 
+
 	        int sendString[24];
             for(int k=0;k<24;k++)
             {
                 sendString[k] = cSendBuff[k+iSendBuffPos-24];
             }
 
-            //WriteFile(hFileWrite, sendString, 24,1);
             WriteFile(hFileWrite, sendString, 12,1);
+
 
 	    }
 
@@ -255,6 +256,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         {
             cBuffer[i] = receiveData[iPackSize*24 + i];
         }
+
 /*
         int[] sendString = new int[iSendBuffPos];
         for(int i = 0; i<iSendBuffPos; i++)
@@ -263,9 +265,27 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         }
 
         WriteFile(hFileWrite, sendString, iSendBuffPos,1);
-        */
+
+*/
 	    FlushFile(hFileWrite);
 
+	    //chunking output buffer
+	    /*
+	    while(iSendBuffPos > 0)
+	    {
+	        int size = 1024;
+	        if (size > iSendBuffPos)
+	        {
+	            size = iSendBuffPos;
+	        }
+	        SocketSend(socket,cSendBuff, size);
+	        iSendBuffPos = iSendBuffPos - size;
+	        for(int i=0;i<iSendBuffPos;i++)
+	        {
+                cSendBuff[i] = cSendBuff[i+size];
+	        }
+
+	    }*/
 	    SocketSend(socket,cSendBuff, iSendBuffPos);
 
 
