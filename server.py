@@ -10,7 +10,7 @@ class Server:
         self._sock = socket.socket()
         self._sock.connect(address)
         self._packetSize = 4096
-        self._bufferLimit = 240
+        self._bufferLimit = 1024*2
 
         self._procWrite = Process(target=self._socket_write_loop,
                                        args=(self.queueIn,))
@@ -68,6 +68,7 @@ class Server:
             else:
                 data = b""
             queue.put(hits)
+        file.close()
 
 
     def _socket_write_loop(self, queue):
