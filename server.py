@@ -24,17 +24,25 @@ class Server:
     def _socket_read_loop(self, queue):
         data = b""
         readpack = b""
+        readInx = 0
         packetSize = self._packetSize
         sock = self._sock
         file = open("client_read.txt","wb")
         while self._runFlag:
-
             while (len(data) < (24)):
                 newdata = sock.recv(packetSize)
                 if newdata:
                     data = data + newdata
+                    for i in range(len(newdata)):
+                        if readInx < 12:
+                            file.write(newdata[i:i+1])
+                        readInx = readInx + 1
+                        if readInx == 24:
+                            readInx = 0
+
+
                     #file.write(newdata)
-                    #file.flush()
+                    file.flush()
 
             size = len(data)
             size = size - (size % 24)
@@ -42,8 +50,8 @@ class Server:
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
                 #writestring = packed
-                file.write(packed[0:12])
-                file.flush()
+                #file.write(packed[0:12])
+                #file.flush()
                 #file.write(packed)#+b"000000\r\n")
                 unpacked = struct.unpack(">6f", packed)
 
