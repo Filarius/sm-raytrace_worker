@@ -173,9 +173,6 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
     int pointer = 0;
     int iPackSize = (iBufSize + dataSize) / 24;
 
-    //float[] flHits = new float[iPackSize*6];
-    //int iHitsCount;
-
     // iterate over chunks
     for (int i=0; i < iPackSize; i++){
         char chunk[24];
@@ -186,7 +183,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
                 chunk[k] = cBuffer[k];
             }
 
-            for (int k=0; k < 24 - iBufSize; k++){
+            for (int k=0; k < (24 - iBufSize); k++){
                 chunk[iBufSize + k] = receiveData[k];
             }
         } else{
