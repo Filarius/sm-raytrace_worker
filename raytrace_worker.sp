@@ -198,6 +198,25 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         float flAngle[3];
         float flHit[3];
 
+        //DEBUG
+        /*
+        float fl1[3];
+        float fl2[3];
+        char c_temp[24];
+        RayDecode(chunk, 0, fl1, fl2);
+        RayEncode(c_temp, 0, fl1, fl2);
+
+        for (int k=0; k<24; k++){
+            if (chunk[k] != c_temp[k]){
+                flag = true;
+                break;
+            }
+        }
+        if (flag){
+            LogMessage("Oh shit !");
+        }
+        */
+
         RayDecode(chunk,0,flPoint,flAngle);
 
         if (!Trace(flPoint, flAngle, flHit))
