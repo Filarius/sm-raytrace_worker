@@ -187,7 +187,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         p++;
     }
 
-    int i_input_size = dataSize + iBufSize;
+    int i_input_size = p;
 
     float flPoint[3];
     float flAngle[3];
@@ -205,13 +205,24 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         RayEncode(c_output, i_output_size, flPoint, flHit);
         i_output_size += 24;
     }
+
     // remember tail data
-    iBufSize = i_input_size - i;
-    i = 0;
-    while (i < iBufSize){
-        cBuffer[i] = c_input[i_input_size + i - 24];
-        i++;
+    if (i != i_input_size){
+        //i -= 24;
+        //iBufSize = i_input_size - i;
+        int k = 0;
+        while (i < i_input_size){
+            //cBuffer[k] = c_input[i_input_size + i];
+            cBuffer[k] = c_input[i];
+            i++;
+            k++;
+        }
+        iBufSize = k;
     }
+    else{
+        iBufSize = 0;
+    }
+
 
     // dump data to file
     for (int i=0; i < i_output_size; i++){
