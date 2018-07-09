@@ -196,7 +196,7 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
     // process rays
     int i = 0;
     int i_output_size = 0;
-    while (i < (i_input_size - 24)){
+    while (i <= (i_input_size - 24)){
         RayDecode(c_input, i, flPoint, flAngle);
         i+= 24;
         if (!Trace(flPoint, flAngle, flHit)){

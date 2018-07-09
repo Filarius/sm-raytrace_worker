@@ -24,34 +24,55 @@ class Server:
     def _socket_read_loop(self, queue):
         data = b""
         readpack = b""
+        buff = b""
+        buff_size = 0
         readInx = 0
+        position = 0
+        data_size = 0
         packetSize = self._packetSize
         sock = self._sock
         file = open("client_read.txt","wb")
+        file2 = open("client_read2.txt","wb")
         while self._runFlag:
-            while (len(data) < (24)):
-                newdata = sock.recv(packetSize)
-                if newdata:
-                    data = data + newdata
-                    for i in range(len(newdata)):
-                        if readInx < 12:
-                            file.write(newdata[i:i+1])
-                        readInx = readInx + 1
-                        if readInx == 24:
-                            readInx = 0
+            newdata = sock.recv(packetSize)
+            if not newdata:
+                continue
 
 
-                    #file.write(newdata)
-                    file.flush()
+            # write socket dump
+            for i in range(len(newdata)):
+                if readInx < 12:
+                    file.write(newdata[i:i + 1])
+                readInx = readInx + 1
+                if readInx == 24:
+                    readInx = 0
 
+            hits = []
+            i = 0
+            while (i < len(newdata)):
+                buff = buff + newdata[i:i+1]
+                i += 1
+                if (len(buff)==24):
+                    unpacked = struct.unpack(">6f", buff)
+                    buff = b""
+
+                    isWrong = False
+                    for val in unpacked:
+                        if math.isnan(val) or math.isinf(val):
+                            isWrong = True
+                            break;
+                    if not isWrong:
+                        hits.append(unpacked)
+
+            '''
             size = len(data)
             size = size - (size % 24)
             hits = []
             for i in range(0, size, 24):
                 packed = data[i:i + 24]
                 #writestring = packed
-                #file.write(packed[0:12])
-                #file.flush()
+                file2.write(packed[0:12])
+                file2.flush()
                 #file.write(packed)#+b"000000\r\n")
                 unpacked = struct.unpack(">6f", packed)
 
@@ -69,12 +90,15 @@ class Server:
                 if not haveNAN:
                     hits.append(unpacked)
             #file.flush()
+            
 
             size = len(data)
             if (size % 24) != 0:
                 data = data[: -(size % 24) ] # last not encoded data
             else:
                 data = b""
+            '''
+
             queue.put(hits)
         file.close()
 
