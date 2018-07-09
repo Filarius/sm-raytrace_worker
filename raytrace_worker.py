@@ -22,7 +22,7 @@ if __name__ == '__main__':
             timeStep = 1
             import os
             #while i <= 1000:
-            while startTime > time()-120: # limit execution time to 60 seconds
+            while startTime > time()-60: # limit execution time to 60 seconds
                # print(i)
                 i += 1
                 #sleep(0.1)

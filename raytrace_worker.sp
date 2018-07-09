@@ -75,16 +75,10 @@ public OnSocketError(Handle:socket, const errorType, const errorNum, any:arg) {
 
 void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle)
 {
-    //TODO
-        char tmp[100];
-
     int iTmp;
     int k = 0;
     for (int i = startPos; i < startPos + 24; i += 4)
     {
-    //LogMessage("k");
-    //IntToString(k,tmp,10);
-        //LogMessage(tmp);
         iTmp = buffer[i + 0];
         iTmp = iTmp << 8;
         iTmp = buffer[i + 1] + iTmp;
@@ -111,7 +105,6 @@ void RayDecode(char[] buffer,int startPos, float[3] pos, float[3] angle)
 
 void RayEncode(char[] buffer,int startPos, float[3] pos, float[3] hit)
 {
-    //TODO
     int iTmp;
     for (int i = 0; i < 6; i++)
     {
@@ -151,12 +144,13 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
         IntToString(iBufSize,tmp,10);
         LogMessage(tmp);
     */
-        char tmp[100];
+       // char tmp[100];
        // LogMessage("dataSize");
-        IntToString(dataSize,tmp,10);
+       //  IntToString(dataSize,tmp,10);
        // LogMessage(tmp);
 
     // dump data to file
+
     int temp[1];
     for (int i=0; i < dataSize; i++){
         if (iterator_read < 12){
@@ -170,61 +164,34 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
     }
     FlushFile(hFileInput);
 
+
     char[] c_output = new char[dataSize+24];
-    char[] c_input = new char[dataSize+24];
-
-    // append tail to head
-    int p = 0;
-    if (iBufSize > 0){
-        while (p < iBufSize){
-            c_input[p] = cBuffer[p];
-            p++;
-        }
-    }
-
-    while ( (p - iBufSize)  < dataSize){
-        c_input[p] = receiveData[p-iBufSize];
-        p++;
-    }
-
-    int i_input_size = p;
+    //char[] c_input = new char[dataSize+24];
+    int i = 0;
+    int i_output_size = 0;
 
     float flPoint[3];
     float flAngle[3];
     float flHit[3];
 
-    // process rays
-    int i = 0;
-    int i_output_size = 0;
-    while (i <= (i_input_size - 24)){
-        RayDecode(c_input, i, flPoint, flAngle);
-        i+= 24;
-        if (!Trace(flPoint, flAngle, flHit)){
-            continue;
-        }
-        RayEncode(c_output, i_output_size, flPoint, flHit);
-        i_output_size += 24;
-    }
+    while (i < dataSize){
+        cBuffer[iBufSize] = receiveData[i];
+        i++;
+        iBufSize++;
+        if (iBufSize == 24){
+            iBufSize = 0;
+            RayDecode(cBuffer, 0, flPoint, flAngle);
+            if (!Trace(flPoint, flAngle, flHit)){
+                continue;
+            }
+            RayEncode(c_output, i_output_size, flPoint, flHit);
+            i_output_size += 24;
 
-    // remember tail data
-    if (i != i_input_size){
-        //i -= 24;
-        //iBufSize = i_input_size - i;
-        int k = 0;
-        while (i < i_input_size){
-            //cBuffer[k] = c_input[i_input_size + i];
-            cBuffer[k] = c_input[i];
-            i++;
-            k++;
         }
-        iBufSize = k;
     }
-    else{
-        iBufSize = 0;
-    }
-
 
     // dump data to file
+
     for (int i=0; i < i_output_size; i++){
         if (iterator_write < 12){
             temp[0] = c_output[i];
@@ -237,7 +204,10 @@ public OnChildSocketReceive(Handle socket, char[] receiveData, int dataSize, int
     }
     FlushFile(hFileWrite);
 
-    SocketSend(socket, c_output, i_output_size);
+
+    if(i_output_size > 0){
+        SocketSend(socket, c_output, i_output_size);
+    }
 }
 
 public OnChildSocketDisconnected(Handle socket, int hFile) {
@@ -258,6 +228,7 @@ bool Trace(float flPos[3], float flAngles[3], float flEnd[3]) {
         delete hTrace;
         return true;
     } else {
+    /*
         float flHitPosition[3];
         flHitPosition[0]=1.0;
         flHitPosition[1]=1.0;
@@ -297,7 +268,7 @@ bool Trace(float flPos[3], float flAngles[3], float flEnd[3]) {
         flEnd[0] = flHitPosition[0];
         flEnd[1] = flHitPosition[1];
         flEnd[2] = flHitPosition[2];
-
+        */
         delete hTrace;
         return false;
     }

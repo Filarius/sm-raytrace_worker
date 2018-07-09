@@ -2,6 +2,8 @@ from server import Server
 from marks import Marks
 from time import sleep, time
 import struct
+import numpy
+import numba
 import math
 
 # populate angle_tree map
@@ -101,78 +103,40 @@ class Grabber:
             return
     '''
 
-    def _make_ray_tree(self, ray, todo=[0 for x in range(3 * 3 * 3 * 6)], vector=None):
-        '''
-        def _1(ray, dx, dy, dz):
-            return
-
-        # def _2(todo,t,i):
-        def _2(todo, t, i, dx, dy, dz):
-
-            # todo.append((t[0], t[1], t[2], i)
-            # todo.add((t[0], t[1], t[2], i))
-            todo[(dx + 1) * 6 * 3 * 3 + (dy + 1) * 6 * 3 + (dz + 1) * 6 + i] = (t[0], t[1], t[2], i)
-        '''
-
-        # _ = []
-
-        # prepare index shift for directed ray
-        # create ray in same direction after hit
-        # todo = []
-        # todo = set()
+    '''
+    @numba.jit(nopython=True)
+    def core(ray):
+        result = set()
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 for dz in [-1, 0, 1]:
-                    # if (dx == 0) and (dy == 0) and (dz == 0):
-                    #    continue
-                    '''r = dict()
-                    r['x'] = ray['x'] + dx
-                    r['y'] = ray['y'] + dy
-                    r['z'] = ray['z'] + dz
-                    '''
-                    t = (ray['x'] + dx,ray['y'] + dy,ray['z'] + dz)
-                    #t = _1(ray, dx, dy, dz)
-
-                    # tbl = (sign+dir,r['x'],r['y'],r['z'])
-                    '''
-                    i=0
-                    for sign in ['-', '+']:
-                        for dir in ['x', 'y', 'z']:
-                            ti = (r['x'], r['y'], r['z'],i)
-                            val = self._ray_map_marks.get(ti,True)
-                            if val:  # no rays from this point
-                                new_ray = self._raySetDirection(r, sign + dir, inf=False)
-                                _.append(new_ray)
-                                self._ray_map_marks.set(ti, False)
-                            i += 1
-                    '''
-                    # i = 0
+                    t = numpy.asarray([dx,dy,dz,0],dtype=numpy.int)
+                    t = t + ray
                     for i in range(6):
-                        # _2(todo,t,i,dx,dy,dz)
-                        todo[(dx + 1) * 6 * 3 * 3 + (dy + 1) * 6 * 3 + (dz + 1) * 6 + i] = (t[0], t[1], t[2], i)
-                        # ti = (t[0], t[1], t[2], i)
-                        # todo.append(ti)
+                        t[3]=i
+                        result.add(t)
+        return result
 
-                        # ti = (ray['x']+dx, ray['y']+dy, ray['z']+ dz, i)
-                        # ti = (r['x'], r['y'], r['z'], i)
+    core_ray = numpy.asarray([ray['x'],ray['y'],ray['z'],0],dtype=numpy.int)
+    data = core(core_ray)
+    result = set()
+    for r in data:
+        result.add(self._create_ray(r[0],r[1],r[2],0,0,0))
+    '''
 
-                        # new_ray = self._raySetDirection(r, i, inf=False)
-                        # _.append(new_ray)
 
-                        # val = self._ray_map_marks.get(ti, True)
-                        # if val:  # no rays from this point
+    def _make_ray_tree(self, ray):
+        def core(x,y,z):
+            result = set()
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    for dz in [-1, 0, 1]:
+                        t = (x + dx, y + dy, z + dz)
+                        for i in range(6):
+                            result.add((t[0], t[1], t[2], i))
+            return result
+        return core(ray['x'],ray['y'],ray['z'])
 
-                        #    self._ray_map_marks.set(ti, False)
-                        # i += 1
-        for r in todo:
-            if abs(ray['x']-r[0])>2:
-                print('кавабанга')
-            if abs(ray['y']-r[1])>2:
-                print('кавабанга')
-            if abs(ray['z']-r[2])>2:
-                print('кавабанга')
-
-        return todo
 
     def init(self):
         ray = self._create_ray(0, 0, 0, 0, 0, 0)
@@ -302,8 +266,8 @@ class Grabber:
                 continue
             '''
 
-
-            m = self._precision * 2
+            '''
+            m = self._precision * 2000
             
             if abs(vector[0]) > m:
                 continue
@@ -311,6 +275,7 @@ class Grabber:
                 continue
             if abs(vector[2]) > m:
                 continue
+            '''
 
 
 
@@ -383,12 +348,12 @@ class Grabber:
 
                 if not hi in self.hits:
                     self.hits[hi] = hit
-                    #string_hit = struct.pack("<3f", *hit)
-                    string_hit = struct.pack("<6f", *hit,*node)
+                    string_hit = struct.pack("<3f", *hit)
+                    #string_hit = struct.pack("<6f", *hit,*node)
                     self._hitFile.write(string_hit)
 
-                todo_temp = [0 for x in range(3 * 3 * 3 * 6)]  # speedup buffer ?
-                new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0), todo_temp)
+                  # speedup buffer ?
+                new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0))
                 todo.update(new_set)
 
                 # new_ray = self._createRay(x, y, z, 0, 0, 0)
