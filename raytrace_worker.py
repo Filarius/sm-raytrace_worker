@@ -9,7 +9,7 @@ if __name__ == '__main__':
         servers.append(('192.168.1.110', 40000))
         #servers.append(('192.168.1.110', 40001))
         #servers.append(('192.168.1.110', 40002))
-        grab = Grabber(addr_list=servers, precision=10)
+        grab = Grabber(addr_list=servers, precision=20)
 
         grab.init()
         #sleep(1)
@@ -22,7 +22,7 @@ if __name__ == '__main__':
             timeStep = 1
             import os
             #while i <= 1000:
-            while startTime > time()-60: # limit execution time to 60 seconds
+            while startTime > time()-60*100000: # limit execution time to 60 seconds
                # print(i)
                 i += 1
                 #sleep(0.1)
@@ -33,8 +33,8 @@ if __name__ == '__main__':
                 if time() > (gtime+timeStep):
                     if cnt > 0:
                         print("")
-                        print('g speed ', cnt / (time() - gtime))
-                        print('g count ', cnt)
+                        print('rays speed ', cnt / (time() - gtime))
+                        print('rays count ', cnt)
                         print("Storage size", len(grab.ray_map_marks.data))
                         print('i= ', i, ' , hits=  ', len(grab.hits))
                         gtime = time()

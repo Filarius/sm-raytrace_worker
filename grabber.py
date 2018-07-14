@@ -8,7 +8,18 @@ import math
 
 # populate angle_tree map
 # direction -> angles
-# order :  -x +x -y +y -z +z
+
+@numba.jit(nopython=True)
+def _make_ray_tree_fast(x, y, z):
+    result = set()
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            for dz in [-1, 0, 1]:
+                t = (x + dx, y + dy, z + dz)
+                for i in range(6):
+                    result.add((t[0], t[1], t[2], i))
+    return result
+
 ANGLE_TREE = {
                 0: {'a': 0,   'b': 180, 'c': 0},
                 1: {'a': 0,   'b': 0,   'c': 0},
@@ -124,18 +135,20 @@ class Grabber:
         result.add(self._create_ray(r[0],r[1],r[2],0,0,0))
     '''
 
-
+    '''
+    @numba.jit(nopython=True)
+def core(x, y, z):
+    result = set()
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            for dz in [-1, 0, 1]:
+                t = (x + dx, y + dy, z + dz)
+                for i in range(6):
+                    result.add((t[0], t[1], t[2], i))
+    return result
+    '''
     def _make_ray_tree(self, ray):
-        def core(x,y,z):
-            result = set()
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    for dz in [-1, 0, 1]:
-                        t = (x + dx, y + dy, z + dz)
-                        for i in range(6):
-                            result.add((t[0], t[1], t[2], i))
-            return result
-        return core(ray['x'],ray['y'],ray['z'])
+        return _make_ray_tree_fast(ray['x'],ray['y'],ray['z'])
 
 
     def init(self):
@@ -248,6 +261,7 @@ class Grabber:
 
         todo = set()
         for ray in rays:
+            self.doneCount += 1
 
             vector = (
                 -(ray['x'] - ray['hx']),
@@ -266,8 +280,8 @@ class Grabber:
                 continue
             '''
 
-            '''
-            m = self._precision * 2000
+            ''''''
+            m = self._precision * 8
             
             if abs(vector[0]) > m:
                 continue
@@ -275,7 +289,7 @@ class Grabber:
                 continue
             if abs(vector[2]) > m:
                 continue
-            '''
+            ''''''
 
 
 
@@ -348,25 +362,29 @@ class Grabber:
 
                 if not hi in self.hits:
                     self.hits[hi] = hit
-                    string_hit = struct.pack("<3f", *hit)
-                    #string_hit = struct.pack("<6f", *hit,*node)
+                    #string_hit = struct.pack("<3f", *hit)
+                    string_hit = struct.pack("<6f", *hit,*node)
                     self._hitFile.write(string_hit)
+                else:
+                    continue
+
 
                   # speedup buffer ?
-                new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0))
+                #new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0))
+                new_set = self._make_ray_tree(self._create_ray(hi[0], hi[1], hi[2], 0, 0, 0))
                 todo.update(new_set)
 
                 # new_ray = self._createRay(x, y, z, 0, 0, 0)
                 # rays_todo.extend(self._makeRayTree(new_ray, vector))
-                self.doneCount += 1
+
 
         self._hitFile.flush()
 
-        t = self.ray_map_marks.data.intersection(todo)
-        # t = todo.intersection(self._ray_map_marks.nested)
-        todo.difference_update(t)
-        # todo.difference_update(self._ray_map_marks.nested)
-        self.ray_map_marks.data.update(todo)
+        #t = self.ray_map_marks.data.intersection(todo)
+            # t = todo.intersection(self._ray_map_marks.nested)
+        #todo.difference_update(t)
+            # todo.difference_update(self._ray_map_marks.nested)
+        #self.ray_map_marks.data.update(todo)
         rays_todo = []
         for data in todo:
             ray = self._create_ray(data[0], data[1], data[2], 0, 0, 0)
