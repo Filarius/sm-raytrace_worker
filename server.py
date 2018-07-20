@@ -42,7 +42,8 @@ class Server:
             # write socket dump
             for i in range(len(newdata)):
                 if readInx < 12:
-                    file.write(newdata[i:i + 1])
+                    #file.write(newdata[i:i + 1])
+                    pass
                 readInx = readInx + 1
                 if readInx == 24:
                     readInx = 0
@@ -136,7 +137,7 @@ class Server:
                 #    break
 
             #file.write(packed)
-            file.write(writepack)
+            #file.write(writepack)
             file.flush()
             writepack = b""
 

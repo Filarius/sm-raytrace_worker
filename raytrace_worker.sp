@@ -49,9 +49,9 @@ public void OnConfigsExecuted() {
 
     SocketSetOption(hSocket, SocketSendLowWatermark, 24);
     SocketSetOption(hSocket, SocketReceiveLowWatermark, 24);
-    SocketSetOption(hSocket, CallbacksPerFrame, 1);
+    SocketSetOption(hSocket, CallbacksPerFrame, 100000);
     SocketSetOption(hSocket, ForceFrameLock, false);
-    // SocketSetOption(hSocket, ConcatenateCallbacks, 24*1000);
+    //SocketSetOption(hSocket, ConcatenateCallbacks, 24*10000);
     // SocketSetOption(hSocket, SocketSendBuffer, 24*5);
     // SocketSetOption(hSocket, SocketReceiveBuffer, 24*5);
     // SocketSetOption(hSocket, SocketReceiveTimeout, 1);
@@ -221,10 +221,14 @@ public OnChildSocketError(Handle socket, int errorType, int errorNum, any ary) {
 
 bool Trace(float flPos[3], float flAngles[3], float flEnd[3]) {
     //Нам же нужно сделать модель, она по логике должна содержать ток видимые части
-    Handle hTrace = TR_TraceRayEx(flPos, flAngles, MASK_VISIBLE, RayType_Infinite); 
+    Handle hTrace = TR_TraceRayEx(flPos, flAngles, MASK_VISIBLE, RayType_Infinite);
 
     if (TR_DidHit(hTrace)) {
         TR_GetEndPosition(flEnd, hTrace);
+        if(TR_PointOutsideWorld(flEnd)){
+            delete hTrace;
+            return false;
+        }
         delete hTrace;
         return true;
     } else {

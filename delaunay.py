@@ -1,41 +1,50 @@
-import scipy.spatial.kdtree
-import struct
+import vtk
 
 
-#import sys
-#sys.setrecursionlimit(10000)
-_MAX_DISTANCE = None
-_PRECISION = None
+def main():
+    colors = vtk.vtkNamedColors()
 
-class PointTree:
-    def __init__(self,data):
-        self._kd = scipy.spatial.kdtree.KDTree(data)
+    points = vtk.vtkPoints()
+    points.InsertNextPoint(0, 0, 0)
+    points.InsertNextPoint(0, 1, 0)
+    points.InsertNextPoint(1, 0, 0)
+    points.InsertNextPoint(1.5, 1, 1)
 
-def set_precision(p):
-    _PRECISION = p
-    _MAX_DISTANCE = p*2.5
+    triangleStrip = vtk.vtkTriangleStrip()
+    triangleStrip.GetPointIds().SetNumberOfIds(4)
+    triangleStrip.GetPointIds().SetId(0, 0)
+    triangleStrip.GetPointIds().SetId(1, 1)
+    triangleStrip.GetPointIds().SetId(2, 2)
+    triangleStrip.GetPointIds().SetId(3, 3)
 
-def load_points(path:str):
-    file = open(r"hits.data", "rb")
-    cnt = 0
-    verts = []
-    while True:
-        #    file.read(12)
-        packed = file.read(12)
+    cells = vtk.vtkCellArray()
+    cells.InsertNextCell(triangleStrip)
 
-        if not packed:
-            break
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetStrips(cells)
 
-        if len(packed) != 12:
-            break
+    # Create an actor and mapper
+    mapper = vtk.vtkDataSetMapper()
+    mapper.SetInputData(polydata)
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetColor(colors.GetColor3d("Cyan"))
+    actor.GetProperty().SetRepresentationToWireframe()
 
-        if cnt > 1000:
-            break
+    # Create a renderer, render window, and interactor
+    renderer = vtk.vtkRenderer()
+    renderWindow = vtk.vtkRenderWindow()
+    renderWindow.SetWindowName("Triangle Strip")
+    renderWindow.AddRenderer(renderer)
+    renderWindowInteractor = vtk.vtkRenderWindowInteractor()
+    renderWindowInteractor.SetRenderWindow(renderWindow)
 
-        cnt += 1
-        unpacked = struct.unpack("<3f", packed)
-        verts.append(unpacked)
-    file.close()
-    return verts
+    renderer.AddActor(actor)
+    renderer.SetBackground(colors.GetColor3d("DarkGreen"))
+    renderWindow.Render()
+    renderWindowInteractor.Start()
 
-verts = load_points('hits.data')
+
+if __name__ == '__main__':
+    main()

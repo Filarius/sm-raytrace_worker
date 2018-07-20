@@ -5,6 +5,7 @@ import struct
 import numpy
 import numba
 import math
+import itertools
 
 # populate angle_tree map
 # direction -> angles
@@ -57,6 +58,8 @@ class Grabber:
 
         self.ray_map_marks = Marks()
         self.hits = dict()  # point coords and distance to nearest grid node
+        self.grid = dict()
+        self.hit_dirs = set()
         self.jobDone = False
         self.doneCount = 0
         self.raysCount = 0
@@ -213,7 +216,7 @@ def core(x, y, z):
         for i in range(len(vector)):
             if max < abs(vector[i]):
                 max = abs(vector[i])
-                print('k ')
+                #print('k ')
                 k = i
         if k == -1:
             print(vector)
@@ -230,6 +233,28 @@ def core(x, y, z):
         norm_vector[k] = 1 if vector[k]>0 else -1
         '''
         return l
+
+
+
+    # assert vector have only one not zero value
+    def vector_normalize(self,vector):
+        vec = list(vector)
+        for k in range(0,len(vec)):
+            if vec[k] != 0:
+                vec[k] = 1 if vec[k]>0 else -1
+                break
+        return vec
+
+    # start point grid, vector normalized grid
+    def spawn_rays(self,ri,vi):
+
+        minus = lambda x,y:x-y
+        sum = lambda x,y:x+y
+        vector = list(map(minus, finish, start))
+
+
+
+
 
     def process(self):
         self.timeDelta = 0
@@ -280,7 +305,7 @@ def core(x, y, z):
                 continue
             '''
 
-            ''''''
+            '''
             m = self._precision * 8
             
             if abs(vector[0]) > m:
@@ -289,7 +314,7 @@ def core(x, y, z):
                 continue
             if abs(vector[2]) > m:
                 continue
-            ''''''
+            '''
 
 
 
@@ -320,19 +345,62 @@ def core(x, y, z):
                 x = f(ray['x'])
                 y = f(ray['y'])
                 z = f(ray['z'])
+
+
                 ri = (x, y, z)
 
-                '''
-                xr = fToReal(ray['x'])
-                yr = fToReal(ray['y'])
-                zr = fToReal(ray['z'])
-                node = (xr, yr, zr)
-                '''
-
-                node = (ray['x'], ray['y'], ray['z'])
 
                 hit = (ray['hx'], ray['hy'], ray['hz'])
                 hi = (f(hit[0]), f(hit[1]), f(hit[2]))
+
+                ray = (ray['x'], ray['y'], ray['z'])
+
+                vi = tuple((x-y) for x,y in zip(hi,ri))
+                vi_norm = self.vector_normalize(vi)
+
+                # li = len
+                _ = list(filter(lambda x:x!=0,vi))
+                if len(_) == 0:
+                    continue
+                _ = abs(_[0])
+                li = _
+
+                # check if this hit is new
+                if not hi in self.grid:
+                    self.grid[hi] = 2 # 2 = surface
+                    string_hit = struct.pack("<6f", *hit,*ray)
+                    self._hitFile.write(string_hit)
+                    if (li > 0) and (not ri in self.grid):
+                        if li == 1:
+                            self.grid[ri] = 1 # 1 = ray start point
+                        if vi_norm[0] != 0:
+                            pos = 0
+                        else:
+                            if vi_norm[1] != 0:
+                                pos = 1
+                            else:
+                                pos = 2
+                        # generate directiom vectors
+                        _1 = [-1,1,0,0]
+                        _0 = [0,0,0,0]
+                        _2 = [0,0,-1,1]
+                        if pos == 0:
+                            _ = list(zip(_0,_1,_2))
+                        else:
+                            if pos == 1:
+                                _ = list(zip(_1, _0, _2))
+                            else:
+                                _ = list(zip(_1, _2, _0))
+
+                        start_p = list(ri)
+                        while start_p[pos] != hi[pos]:
+                            for direc in _:
+                                d = self._vector_to_dir(direc)
+                                _1 = list(start_p)
+                                _1.append(d)
+                                todo.add(tuple(_1))
+                            start_p[pos] = start_p[pos] + vi_norm[pos]
+
 
                 #self.ray_map_marks.set_ray(ri,hi,None,3)
 
@@ -359,20 +427,22 @@ def core(x, y, z):
                     string_hit = struct.pack("<3f", *node)
                     self._hitFile.write(string_hit)
                 '''
-
+                '''
                 if not hi in self.hits:
                     self.hits[hi] = hit
+
                     #string_hit = struct.pack("<3f", *hit)
                     string_hit = struct.pack("<6f", *hit,*node)
                     self._hitFile.write(string_hit)
                 else:
                     continue
+                '''
 
 
                   # speedup buffer ?
                 #new_set = self._make_ray_tree(self._create_ray(x, y, z, 0, 0, 0))
-                new_set = self._make_ray_tree(self._create_ray(hi[0], hi[1], hi[2], 0, 0, 0))
-                todo.update(new_set)
+                #new_set = self._make_ray_tree(self._create_ray(hi[0], hi[1], hi[2], 0, 0, 0))
+                #todo.update(new_set)
 
                 # new_ray = self._createRay(x, y, z, 0, 0, 0)
                 # rays_todo.extend(self._makeRayTree(new_ray, vector))
