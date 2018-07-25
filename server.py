@@ -2,6 +2,7 @@ from multiprocessing import Process, Queue
 import socket
 import struct
 import math
+from time import time
 class Server:
     def __init__(self, address):
         self.queueIn = Queue(100)
@@ -10,7 +11,8 @@ class Server:
         self._sock = socket.socket()
         self._sock.connect(address)
         self._packetSize = 4096
-        self._bufferLimit = 512
+        self._bufferLimit = 4096
+        self._store_timeout = 2
 
         self._procWrite = Process(target=self._socket_write_loop,
                                        args=(self.queueIn,))
@@ -19,6 +21,7 @@ class Server:
                                        args=(self.queueOut,))
         self._procRead.start()
         self._procWrite.start()
+
 
 
     def _socket_read_loop(self, queue):

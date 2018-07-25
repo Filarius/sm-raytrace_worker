@@ -7,6 +7,7 @@ import numba
 import math
 import itertools
 
+DEBUG = True
 # populate angle_tree map
 # direction -> angles
 
@@ -460,6 +461,9 @@ def core(x, y, z):
             ray = self._create_ray(data[0], data[1], data[2], 0, 0, 0)
             direction = data[3]
             rays_todo.append(ray_set_direction(ray, direction, self._precision))
+        if DEBUG:
+            if (len(rays_todo))> 500:
+               print(len(rays_todo))
 
         if len(rays_todo) > 0:
             self.add_jobs(rays_todo)

@@ -221,7 +221,7 @@ public OnChildSocketError(Handle socket, int errorType, int errorNum, any ary) {
 
 bool Trace(float flPos[3], float flAngles[3], float flEnd[3]) {
     //Нам же нужно сделать модель, она по логике должна содержать ток видимые части
-    Handle hTrace = TR_TraceRayEx(flPos, flAngles, MASK_VISIBLE, RayType_Infinite);
+    Handle hTrace = TR_TraceRayEx(flPos, flAngles, MASK_SOLID & ~ CONTENTS_MONSTER /*CONTENTS_SOLID*/ /*MASK_VISIBLE*/, RayType_Infinite);
 
     if (TR_DidHit(hTrace)) {
         TR_GetEndPosition(flEnd, hTrace);
